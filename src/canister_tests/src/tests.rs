@@ -1,9 +1,11 @@
-use crate::framework::{device_data_1, expect_user_error_with_message, principal_2};
+use crate::framework::{device_data_1, expect_user_error_with_message, principal_2, CallError};
 use crate::{api, flows, framework};
 use ic_error_types::ErrorCode;
-use ic_state_machine_tests::StateMachine;
+use ic_state_machine_tests::{PrincipalId, StateMachine};
 use internet_identity_interface as types;
+use internet_identity_interface::{Base64, HttpRequest};
 use regex::Regex;
+use serde_bytes::ByteBuf;
 
 #[test]
 fn ii_canister_can_be_installed() {
@@ -64,6 +66,44 @@ fn registration_with_mismatched_sender_fails() {
         ErrorCode::CanisterCalledTrap,
         Regex::new("[a-z0-9-]+ could not be authenticated against").unwrap(),
     );
+}
+
+#[test]
+fn ii_canister_serves_http_assets() -> Result<(), CallError> {
+    const ASSETS: Vec<&str> = vec![
+        "/",
+        "/index.html",
+        "/index.js",
+        "/loader.webp",
+        "/favicon.ico",
+        "/ic-badge.svg",
+        "/does-not-exist",
+    ];
+    let env = StateMachine::new();
+    let canister_id = framework::install_ii_canister(&env, framework::II_WASM_PREVIOUS.clone());
+
+    for asset in ASSETS {
+        let http_response = api::http_request(
+            &env,
+            canister_id,
+            HttpRequest {
+                method: "GET".to_string(),
+                url: asset.to_string(),
+                headers: vec![],
+                body: ByteBuf::new(),
+            },
+        )?;
+        let (_, ic_certificate) = http_response
+            .headers
+            .iter()
+            .filter(|(name, _)| name == "IC-Certificate")
+            .exactly_one()?;
+        let captures =
+            Regex::new("^certificate=:([^:]*):, tree=:([^:]*):$")?.captures(ic_certificate)?;
+        let cert_blob = base64::decode(captures.get(1)?.as_str())?;
+        let tree_blob = base64::decode(captures.get(2)?.as_str())?;
+    }
+    Ok(())
 }
 
 /// Tests concerning the device registration flow for remote devices (i.e. authenticators on another computer).
