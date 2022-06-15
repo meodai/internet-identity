@@ -407,16 +407,20 @@ version = "0.1.0"
 dependencies = [
  "base64 0.13.0",
  "candid",
+ "flate2",
  "ic-agent",
  "ic-cdk",
  "ic-error-types",
  "ic-state-machine-tests",
  "ic-types 0.3.0",
  "internet_identity_interface",
+ "itertools",
  "lazy_static",
  "regex",
  "serde",
  "serde_bytes",
+ "serde_cbor",
+ "sha2 0.10.2",
 ]
 
 [[package]]

@@ -1,23 +1,36 @@
-// TODO: pull out into it's own library
+// adapted from https://github.com/dfinity/icx-proxy/blob/0cd1a22f717b56ac550a3554a25a845878bfb4e8/src/main.rs#L611
+// TODO: certificate validation should be it's own library
 
+use flate2::read::GzDecoder;
 use ic_agent::agent::AgentConfig;
 use ic_agent::{lookup_value, Agent, AgentError, Certificate};
+use ic_state_machine_tests::CanisterId;
 use ic_types::hash_tree::LookupResult;
-use ic_types::{HashTree, Principal};
+use ic_types::HashTree;
+use sha2::{Digest, Sha256};
+use std::io::Read;
+
+// The limit of a buffer we should decompress ~10mb.
+const MAX_CHUNK_SIZE_TO_DECOMPRESS: usize = 1024;
+const MAX_CHUNKS_TO_DECOMPRESS: u64 = 10_240;
 
 pub fn validate_certification(
-    certificate_blob: Vec<u8>,
-    tree_blob: Vec<u8>,
-    canister_id: &Principal,
+    certificate_blob: &Vec<u8>,
+    tree_blob: &Vec<u8>,
+    canister_id: CanisterId,
     uri_path: &str,
     body: &[u8],
+    encoding: Option<String>,
 ) -> bool {
-    let cert: Certificate =
-        serde_cbor::from_slice(certificates.certificate).map_err(AgentError::InvalidCborData)?;
-    let tree: HashTree =
-        serde_cbor::from_slice(certificates.tree).map_err(AgentError::InvalidCborData)?;
+    let cert: Certificate = serde_cbor::from_slice(certificate_blob)
+        .map_err(AgentError::InvalidCborData)
+        .unwrap();
+    let tree: HashTree = serde_cbor::from_slice(tree_blob)
+        .map_err(AgentError::InvalidCborData)
+        .unwrap();
 
-    if let Err(e) = Agent::new(AgentConfig::default()).verify(&cert, *canister_id, false) {
+    let agent = Agent::new(AgentConfig::default()).unwrap();
+    if let Err(_) = agent.verify(&cert, canister_id.get().0, false) {
         return false;
     }
 
@@ -28,20 +41,13 @@ pub fn validate_certification(
     ];
     let witness = match lookup_value(&cert, certified_data_path) {
         Ok(witness) => witness,
-        Err(e) => {
+        Err(_) => {
             return false;
         }
     };
     let digest = tree.digest();
 
     if witness != digest {
-        slog::trace!(
-            logger,
-            ">> witness ({}) did not match digest ({})",
-            hex::encode(witness),
-            hex::encode(digest)
-        );
-
         return false;
     }
 
@@ -56,6 +62,7 @@ pub fn validate_certification(
         },
     };
 
+    let body_sha = decode_body_to_sha256(body, encoding).unwrap();
     body_sha == tree_sha
 }
 
@@ -65,19 +72,6 @@ fn decode_body_to_sha256(body: &[u8], encoding: Option<String>) -> Option<[u8; 3
     match encoding.as_deref() {
         Some("gzip") => {
             let mut decoder = GzDecoder::new(body);
-            for _ in 0..MAX_CHUNKS_TO_DECOMPRESS {
-                let bytes = decoder.read(&mut decoded).ok()?;
-                if bytes == 0 {
-                    return Some(sha256.finalize().into());
-                }
-                sha256.update(&decoded[0..bytes]);
-            }
-            if decoder.bytes().next().is_some() {
-                return None;
-            }
-        }
-        Some("deflate") => {
-            let mut decoder = DeflateDecoder::new(body);
             for _ in 0..MAX_CHUNKS_TO_DECOMPRESS {
                 let bytes = decoder.read(&mut decoded).ok()?;
                 if bytes == 0 {

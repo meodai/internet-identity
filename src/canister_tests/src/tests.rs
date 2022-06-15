@@ -1,9 +1,11 @@
+use crate::certificate_validation::validate_certification;
 use crate::framework::{device_data_1, expect_user_error_with_message, principal_2, CallError};
 use crate::{api, flows, framework};
 use ic_error_types::ErrorCode;
-use ic_state_machine_tests::{PrincipalId, StateMachine};
+use ic_state_machine_tests::StateMachine;
 use internet_identity_interface as types;
-use internet_identity_interface::{Base64, HttpRequest};
+use internet_identity_interface::HttpRequest;
+use itertools::Itertools;
 use regex::Regex;
 use serde_bytes::ByteBuf;
 
@@ -70,19 +72,18 @@ fn registration_with_mismatched_sender_fails() {
 
 #[test]
 fn ii_canister_serves_http_assets() -> Result<(), CallError> {
-    const ASSETS: Vec<&str> = vec![
+    let assets: Vec<&str> = vec![
         "/",
         "/index.html",
         "/index.js",
         "/loader.webp",
         "/favicon.ico",
         "/ic-badge.svg",
-        "/does-not-exist",
     ];
     let env = StateMachine::new();
     let canister_id = framework::install_ii_canister(&env, framework::II_WASM_PREVIOUS.clone());
 
-    for asset in ASSETS {
+    for asset in assets {
         let http_response = api::http_request(
             &env,
             canister_id,
@@ -97,11 +98,23 @@ fn ii_canister_serves_http_assets() -> Result<(), CallError> {
             .headers
             .iter()
             .filter(|(name, _)| name == "IC-Certificate")
-            .exactly_one()?;
-        let captures =
-            Regex::new("^certificate=:([^:]*):, tree=:([^:]*):$")?.captures(ic_certificate)?;
-        let cert_blob = base64::decode(captures.get(1)?.as_str())?;
-        let tree_blob = base64::decode(captures.get(2)?.as_str())?;
+            .exactly_one()
+            .unwrap();
+        let captures = Regex::new("^certificate=:([^:]*):, tree=:([^:]*):$")
+            .unwrap()
+            .captures(ic_certificate)
+            .unwrap();
+        let cert_blob = base64::decode(captures.get(1).unwrap().as_str()).unwrap();
+        let tree_blob = base64::decode(captures.get(2).unwrap().as_str()).unwrap();
+
+        assert!(validate_certification(
+            &cert_blob,
+            &tree_blob,
+            canister_id,
+            asset,
+            &http_response.body,
+            None
+        ));
     }
     Ok(())
 }
