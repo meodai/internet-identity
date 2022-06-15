@@ -104,6 +104,8 @@ fn ii_canister_serves_http_assets() -> Result<(), CallError> {
             .unwrap()
             .captures(ic_certificate)
             .unwrap();
+        println!("certificate header value: {}", ic_certificate);
+        assert!(!captures.get(1).unwrap().as_str().is_empty());
         let cert_blob = base64::decode(captures.get(1).unwrap().as_str()).unwrap();
         let tree_blob = base64::decode(captures.get(2).unwrap().as_str()).unwrap();
 

@@ -3,7 +3,7 @@
 
 use flate2::read::GzDecoder;
 use ic_agent::agent::AgentConfig;
-use ic_agent::{lookup_value, Agent, AgentError, Certificate};
+use ic_agent::{lookup_value, Agent, Certificate};
 use ic_state_machine_tests::CanisterId;
 use ic_types::hash_tree::LookupResult;
 use ic_types::HashTree;
@@ -22,12 +22,8 @@ pub fn validate_certification(
     body: &[u8],
     encoding: Option<String>,
 ) -> bool {
-    let cert: Certificate = serde_cbor::from_slice(certificate_blob)
-        .map_err(AgentError::InvalidCborData)
-        .unwrap();
-    let tree: HashTree = serde_cbor::from_slice(tree_blob)
-        .map_err(AgentError::InvalidCborData)
-        .unwrap();
+    let cert: Certificate = serde_cbor::from_slice(certificate_blob).unwrap();
+    let tree: HashTree = serde_cbor::from_slice(tree_blob).unwrap();
 
     let agent = Agent::new(AgentConfig::default()).unwrap();
     if let Err(_) = agent.verify(&cert, canister_id.get().0, false) {
