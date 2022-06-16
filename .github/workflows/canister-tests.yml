@@ -129,8 +129,6 @@ jobs:
   # (note: this runs _all_ cargo tests)
   canister-tests:
     runs-on: ${{ matrix.os }}
-    needs:
-      - docker-build
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest ]
@@ -153,6 +151,8 @@ jobs:
 
       - name: Install Rust
         run: |
+          echo "$PATH"
+          exit 1
           rustup update "$RUSTC_VERSION" --no-self-update
           rustup default "$RUSTC_VERSION"
           rustup target add wasm32-unknown-unknown
