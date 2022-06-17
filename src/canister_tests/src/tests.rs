@@ -109,14 +109,17 @@ fn ii_canister_serves_http_assets() -> Result<(), CallError> {
         let cert_blob = base64::decode(captures.get(1).unwrap().as_str()).unwrap();
         let tree_blob = base64::decode(captures.get(2).unwrap().as_str()).unwrap();
 
-        assert!(validate_certification(
+        let result = validate_certification(
             &cert_blob,
             &tree_blob,
             canister_id,
             asset,
             &http_response.body,
-            None
-        ));
+            None,
+            env.get_root_key(),
+        );
+        println!("result: {:?}", result);
+        assert!(result);
     }
     Ok(())
 }

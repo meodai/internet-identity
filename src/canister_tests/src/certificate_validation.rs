@@ -1,12 +1,15 @@
 // adapted from https://github.com/dfinity/icx-proxy/blob/0cd1a22f717b56ac550a3554a25a845878bfb4e8/src/main.rs#L611
 // TODO: certificate validation should be it's own library
 
+use candid::types::ic_types::hash_tree::LookupResult;
 use flate2::read::GzDecoder;
+use ic_agent::agent::http_transport::ReqwestHttpReplicaV2Transport;
 use ic_agent::agent::AgentConfig;
+use ic_agent::hash_tree::HashTree;
 use ic_agent::{lookup_value, Agent, Certificate};
+use ic_crypto_utils_threshold_sig_der::public_key_to_der;
 use ic_state_machine_tests::CanisterId;
-use ic_types::hash_tree::LookupResult;
-use ic_types::HashTree;
+use ic_types::crypto::threshold_sig::ThresholdSigPublicKey;
 use sha2::{Digest, Sha256};
 use std::io::Read;
 
@@ -21,12 +24,21 @@ pub fn validate_certification(
     uri_path: &str,
     body: &[u8],
     encoding: Option<String>,
+    root_key: ThresholdSigPublicKey,
 ) -> bool {
     let cert: Certificate = serde_cbor::from_slice(certificate_blob).unwrap();
     let tree: HashTree = serde_cbor::from_slice(tree_blob).unwrap();
 
-    let agent = Agent::new(AgentConfig::default()).unwrap();
-    if let Err(_) = agent.verify(&cert, canister_id.get().0, false) {
+    let agent = Agent::builder()
+        .with_transport(ReqwestHttpReplicaV2Transport::create("https://identity.ic0.app").unwrap())
+        .build()
+        .unwrap();
+    agent
+        .set_root_key(public_key_to_der(&root_key.into_bytes()).unwrap())
+        .expect("setting root key failed");
+    println!("canister id {:?}", canister_id.get().0);
+    if let Err(err) = agent.verify(&cert, canister_id.get().0, false) {
+        println!("agent verify {:?}", err);
         return false;
     }
 
@@ -43,7 +55,9 @@ pub fn validate_certification(
     };
     let digest = tree.digest();
 
-    if witness != digest {
+    println!("witness: {:?}", (*witness).to_vec());
+    println!("digest: {:?}", digest);
+    if *witness != digest {
         return false;
     }
 

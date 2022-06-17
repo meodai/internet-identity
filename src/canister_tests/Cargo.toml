@@ -3,6 +3,9 @@ name = "canister_tests"
 version = "0.1.0"
 edition = "2018"
 
+[net]
+git-fetch-with-cli = true   # use the `git` executable for git operations
+
 [dev-dependencies]
 base64 = "0.13.0"
 flate2 = "1.0"
@@ -20,6 +23,8 @@ internet_identity_interface = { path = "../internet_identity_interface" }
 candid = "0.7"
 ic-agent = "0.17.0"
 ic-cdk = "0.5"
-ic-types = "0.3"
-ic-error-types = { git = "https://github.com/dfinity/ic", rev = "46b3de985fef2cc9e326ed191c266b610512443b" }
-ic-state-machine-tests = { git = "https://github.com/dfinity/ic", rev = "46b3de985fef2cc9e326ed191c266b610512443b" }
+ic-crypto-tree-hash = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "8c44bc3766b1e02547d92f9f56d9a193d95af8bf" }
+ic-crypto-utils-threshold-sig-der = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "8c44bc3766b1e02547d92f9f56d9a193d95af8bf" }
+ic-types = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "8c44bc3766b1e02547d92f9f56d9a193d95af8bf" }
+ic-error-types = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "8c44bc3766b1e02547d92f9f56d9a193d95af8bf" }
+ic-state-machine-tests = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "8c44bc3766b1e02547d92f9f56d9a193d95af8bf" }

@@ -1,8 +1,8 @@
 use candid::utils::{decode_args, encode_args, ArgumentDecoder, ArgumentEncoder};
+use candid::Principal;
 use candid::{parser::value::IDLValue, IDLArgs};
 use ic_error_types::ErrorCode;
 use ic_state_machine_tests::{CanisterId, PrincipalId, StateMachine, UserError, WasmResult};
-use ic_types::Principal;
 use internet_identity_interface as types;
 use lazy_static::lazy_static;
 use regex::Regex;
