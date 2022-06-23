@@ -317,13 +317,13 @@ upgrade-insecure-requests;$"
     .is_match(csp));
 }
 
-pub fn parse_metric(body: &str, metric: &str) -> (f64, SystemTime) {
+pub fn parse_metric(body: &str, metric: &str) -> (u64, SystemTime) {
     let metric_capture = Regex::new(&format!("(?m)^{} (\\d+) (\\d+)$", metric))
         .unwrap()
         .captures(body)
         .expect(&format!("metric {} not found", metric));
 
-    let metric: f64 = metric_capture.get(1).unwrap().as_str().parse().unwrap();
+    let metric: u64 = metric_capture.get(1).unwrap().as_str().parse().unwrap();
     let metric_timestamp = SystemTime::UNIX_EPOCH
         + Duration::from_millis(metric_capture.get(2).unwrap().as_str().parse().unwrap());
     (metric, metric_timestamp)

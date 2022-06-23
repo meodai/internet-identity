@@ -863,10 +863,10 @@ mod delegation_tests {
 #[cfg(test)]
 mod http_tests {
     use crate::certificate_validation::validate_certification;
-    use crate::framework::{principal_1, CallError};
+    use crate::framework::{device_data_1, principal_1, CallError};
     use crate::{api, flows, framework};
     use ic_state_machine_tests::StateMachine;
-    use internet_identity_interface::HttpRequest;
+    use internet_identity_interface::{ChallengeAttempt, HttpRequest};
     use serde_bytes::ByteBuf;
     use std::time::{Duration, SystemTime};
 
@@ -975,8 +975,8 @@ mod http_tests {
             framework::parse_metric(&metrics, "internet_identity_min_user_number");
         let (max_user_number, _) =
             framework::parse_metric(&metrics, "internet_identity_max_user_number");
-        assert_eq!(min_user_number, 10_000.);
-        assert_eq!(max_user_number, 3_784_872.);
+        assert_eq!(min_user_number, 10_000);
+        assert_eq!(max_user_number, 3_784_872);
         Ok(())
     }
 
@@ -990,7 +990,7 @@ mod http_tests {
             let metrics = flows::get_metrics(&env, canister_id);
 
             let (user_count, _) = framework::parse_metric(&metrics, "internet_identity_user_count");
-            assert_eq!(user_count, f64::from(count));
+            assert_eq!(user_count, count);
 
             flows::register_anchor(&env, canister_id);
         }
@@ -1009,7 +1009,7 @@ mod http_tests {
             let metrics = flows::get_metrics(&env, canister_id);
             let (signature_count, _) =
                 framework::parse_metric(&metrics, "internet_identity_signature_count");
-            assert_eq!(signature_count, f64::from(count));
+            assert_eq!(signature_count, count);
 
             api::prepare_delegation(
                 &env,
@@ -1041,13 +1041,70 @@ mod http_tests {
                 env.time()
                     .duration_since(SystemTime::UNIX_EPOCH)
                     .unwrap()
-                    .as_nanos() as f64
+                    .as_nanos() as u64
             );
 
             env.advance_time(Duration::from_secs(300)); // the state machine does not advance time on its own
             framework::upgrade_ii_canister(&env, canister_id, framework::II_WASM.clone());
         }
         Ok(())
+    }
+
+    /// Verifies that the inflight challenges metric is updated correctly.
+    #[test]
+    fn metrics_inflight_challenges_should_update_after_create_challenge() -> Result<(), CallError> {
+        let env = StateMachine::new();
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+
+        let metrics = flows::get_metrics(&env, canister_id);
+        let (challenge_count, _) =
+            framework::parse_metric(&metrics, "internet_identity_inflight_challenges");
+        assert_eq!(challenge_count, 0);
+
+        let challenge_1 = api::create_challenge(&env, canister_id);
+        env.advance_time(Duration::from_secs(1));
+        let challenge_2 = api::create_challenge(&env, canister_id);
+
+        println!("{:?}\n{:?}", challenge_1, challenge_2);
+
+        let metrics = flows::get_metrics(&env, canister_id);
+        let (challenge_count, _) =
+            framework::parse_metric(&metrics, "internet_identity_inflight_challenges");
+        assert_eq!(challenge_count, 2);
+
+        // solving a challenge removes it from the inflight pool
+        api::register(
+            &env,
+            canister_id,
+            principal_1(),
+            device_data_1(),
+            ChallengeAttempt {
+                chars: "a".to_string(),
+                key: challenge_1.challenge_key,
+            },
+        )?;
+
+        let metrics = flows::get_metrics(&env, canister_id);
+        let (challenge_count, _) =
+            framework::parse_metric(&metrics, "internet_identity_inflight_challenges");
+        assert_eq!(challenge_count, 1);
+        Ok(())
+    }
+
+    /// Verifies that the users in registration mode metric is updated correctly.
+    #[test]
+    fn metrics_device_registration_mode_should_update_correctly() {
+        let env = StateMachine::new();
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+
+        for count in 0..2 {
+            let metrics = flows::get_metrics(&env, canister_id);
+            let (challenge_count, _) =
+                framework::parse_metric(&metrics, "internet_identity_users_in_registration_mode");
+            assert_eq!(challenge_count, count);
+
+            api::create_challenge(&env, canister_id);
+        }
     }
 }
 
