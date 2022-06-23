@@ -863,7 +863,7 @@ mod delegation_tests {
 #[cfg(test)]
 mod http_tests {
     use crate::certificate_validation::validate_certification;
-    use crate::framework::CallError;
+    use crate::framework::{principal_1, CallError};
     use crate::{api, flows, framework};
     use ic_state_machine_tests::StateMachine;
     use internet_identity_interface::HttpRequest;
@@ -951,20 +951,9 @@ mod http_tests {
         env.advance_time(Duration::from_secs(300)); // advance time to see it reflected on the metrics endpoint
         let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
-        let http_response = api::http_request(
-            &env,
-            canister_id,
-            HttpRequest {
-                method: "GET".to_string(),
-                url: "/metrics".to_string(),
-                headers: vec![],
-                body: ByteBuf::new(),
-            },
-        )?;
-        let body = String::from_utf8_lossy(&*http_response.body);
-
+        let metrics_body = flows::get_metrics(&env, canister_id);
         for metric in metrics {
-            let (_, metric_timestamp) = framework::parse_metric(body.as_ref(), metric);
+            let (_, metric_timestamp) = framework::parse_metric(&metrics_body, metric);
             assert_eq!(
                 metric_timestamp,
                 env.time(),
@@ -980,22 +969,12 @@ mod http_tests {
         let env = StateMachine::new();
         let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
-        let http_response = api::http_request(
-            &env,
-            canister_id,
-            HttpRequest {
-                method: "GET".to_string(),
-                url: "/metrics".to_string(),
-                headers: vec![],
-                body: ByteBuf::new(),
-            },
-        )?;
-        let body = String::from_utf8_lossy(&*http_response.body);
+        let metrics = flows::get_metrics(&env, canister_id);
 
         let (min_user_number, _) =
-            framework::parse_metric(body.as_ref(), "internet_identity_min_user_number");
+            framework::parse_metric(&metrics, "internet_identity_min_user_number");
         let (max_user_number, _) =
-            framework::parse_metric(body.as_ref(), "internet_identity_max_user_number");
+            framework::parse_metric(&metrics, "internet_identity_max_user_number");
         assert_eq!(min_user_number, 10_000.);
         assert_eq!(max_user_number, 3_784_872.);
         Ok(())
@@ -1008,23 +987,39 @@ mod http_tests {
         let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
         for count in 0..2 {
-            let http_response = api::http_request(
-                &env,
-                canister_id,
-                HttpRequest {
-                    method: "GET".to_string(),
-                    url: "/metrics".to_string(),
-                    headers: vec![],
-                    body: ByteBuf::new(),
-                },
-            )?;
-            let body = String::from_utf8_lossy(&*http_response.body);
+            let metrics = flows::get_metrics(&env, canister_id);
 
-            let (user_count, _) =
-                framework::parse_metric(body.as_ref(), "internet_identity_user_count");
+            let (user_count, _) = framework::parse_metric(&metrics, "internet_identity_user_count");
             assert_eq!(user_count, f64::from(count));
 
             flows::register_anchor(&env, canister_id);
+        }
+        Ok(())
+    }
+
+    /// Verifies that the signature count metric is updated correctly.
+    #[test]
+    fn metrics_signature_count_should_increase_after_prepare_delegation() -> Result<(), CallError> {
+        let env = StateMachine::new();
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+        let frontend_hostname = "https://some-dapp.com";
+        let user_number = flows::register_anchor(&env, canister_id);
+
+        for count in 0..2 {
+            let metrics = flows::get_metrics(&env, canister_id);
+            let (signature_count, _) =
+                framework::parse_metric(&metrics, "internet_identity_signature_count");
+            assert_eq!(signature_count, f64::from(count));
+
+            api::prepare_delegation(
+                &env,
+                canister_id,
+                principal_1(),
+                user_number,
+                frontend_hostname.to_string(),
+                ByteBuf::from(format!("session key {}", count)),
+                None,
+            )?;
         }
         Ok(())
     }
