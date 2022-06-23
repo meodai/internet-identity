@@ -868,7 +868,7 @@ mod http_tests {
     use ic_state_machine_tests::StateMachine;
     use internet_identity_interface::HttpRequest;
     use serde_bytes::ByteBuf;
-    use std::time::Duration;
+    use std::time::{Duration, SystemTime};
 
     /// Verifies that expected assets are delivered, certified and have security headers.
     #[test]
@@ -1020,6 +1020,32 @@ mod http_tests {
                 ByteBuf::from(format!("session key {}", count)),
                 None,
             )?;
+        }
+        Ok(())
+    }
+
+    /// Verifies that the last II wasm upgrade timestamp is updated correctly.
+    #[test]
+    fn metrics_last_upgrade_timestamp_should_update_after_upgrade() -> Result<(), CallError> {
+        let env = StateMachine::new();
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+        // immediately upgrade because installing the canister does not set the metric
+        framework::upgrade_ii_canister(&env, canister_id, framework::II_WASM.clone());
+
+        for _ in 0..2 {
+            let metrics = flows::get_metrics(&env, canister_id);
+            let (upgrade_timestamp, _) =
+                framework::parse_metric(&metrics, "internet_identity_last_upgrade_timestamp");
+            assert_eq!(
+                upgrade_timestamp,
+                env.time()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos() as f64
+            );
+
+            env.advance_time(Duration::from_secs(300)); // the state machine does not advance time on its own
+            framework::upgrade_ii_canister(&env, canister_id, framework::II_WASM.clone());
         }
         Ok(())
     }
