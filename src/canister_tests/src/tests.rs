@@ -1007,39 +1007,25 @@ mod http_tests {
         let env = StateMachine::new();
         let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
-        let http_response = api::http_request(
-            &env,
-            canister_id,
-            HttpRequest {
-                method: "GET".to_string(),
-                url: "/metrics".to_string(),
-                headers: vec![],
-                body: ByteBuf::new(),
-            },
-        )?;
-        let body = String::from_utf8_lossy(&*http_response.body);
+        for count in 0..2 {
+            let http_response = api::http_request(
+                &env,
+                canister_id,
+                HttpRequest {
+                    method: "GET".to_string(),
+                    url: "/metrics".to_string(),
+                    headers: vec![],
+                    body: ByteBuf::new(),
+                },
+            )?;
+            let body = String::from_utf8_lossy(&*http_response.body);
 
-        let (user_count, _) =
-            framework::parse_metric(body.as_ref(), "internet_identity_user_count");
-        assert_eq!(user_count, 0.);
+            let (user_count, _) =
+                framework::parse_metric(body.as_ref(), "internet_identity_user_count");
+            assert_eq!(user_count, f64::from(count));
 
-        flows::register_anchor(&env, canister_id);
-
-        let http_response = api::http_request(
-            &env,
-            canister_id,
-            HttpRequest {
-                method: "GET".to_string(),
-                url: "/metrics".to_string(),
-                headers: vec![],
-                body: ByteBuf::new(),
-            },
-        )?;
-        let body = String::from_utf8_lossy(&*http_response.body);
-
-        let (user_count, _) =
-            framework::parse_metric(body.as_ref(), "internet_identity_user_count");
-        assert_eq!(user_count, 1.);
+            flows::register_anchor(&env, canister_id);
+        }
         Ok(())
     }
 }
