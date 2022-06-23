@@ -864,10 +864,11 @@ mod delegation_tests {
 mod http_tests {
     use crate::certificate_validation::validate_certification;
     use crate::framework::CallError;
-    use crate::{api, framework};
+    use crate::{api, flows, framework};
     use ic_state_machine_tests::StateMachine;
     use internet_identity_interface::HttpRequest;
     use serde_bytes::ByteBuf;
+    use std::time::Duration;
 
     /// Verifies that expected assets are delivered, certified and have security headers.
     #[test]
@@ -930,6 +931,115 @@ mod http_tests {
             .expect(&format!("validation for asset \"{}\" failed", asset));
             framework::verify_security_headers(&http_response.headers);
         }
+        Ok(())
+    }
+
+    /// Verifies that all expected metrics are available via the HTTP endpoint.
+    #[test]
+    fn ii_canister_serves_http_metrics() -> Result<(), CallError> {
+        let metrics = vec![
+            "internet_identity_user_count",
+            "internet_identity_min_user_number",
+            "internet_identity_max_user_number",
+            "internet_identity_signature_count",
+            "internet_identity_stable_memory_pages",
+            "internet_identity_last_upgrade_timestamp",
+            "internet_identity_inflight_challenges",
+            "internet_identity_users_in_registration_mode",
+        ];
+        let env = StateMachine::new();
+        env.advance_time(Duration::from_secs(300)); // advance time to see it reflected on the metrics endpoint
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+
+        let http_response = api::http_request(
+            &env,
+            canister_id,
+            HttpRequest {
+                method: "GET".to_string(),
+                url: "/metrics".to_string(),
+                headers: vec![],
+                body: ByteBuf::new(),
+            },
+        )?;
+        let body = String::from_utf8_lossy(&*http_response.body);
+
+        for metric in metrics {
+            let (_, metric_timestamp) = framework::parse_metric(body.as_ref(), metric);
+            assert_eq!(
+                metric_timestamp,
+                env.time(),
+                "metric timestamp did not match state machine time"
+            )
+        }
+        Ok(())
+    }
+
+    /// Verifies that the metrics list the expected user range.
+    #[test]
+    fn metrics_should_list_expected_user_range() -> Result<(), CallError> {
+        let env = StateMachine::new();
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+
+        let http_response = api::http_request(
+            &env,
+            canister_id,
+            HttpRequest {
+                method: "GET".to_string(),
+                url: "/metrics".to_string(),
+                headers: vec![],
+                body: ByteBuf::new(),
+            },
+        )?;
+        let body = String::from_utf8_lossy(&*http_response.body);
+
+        let (min_user_number, _) =
+            framework::parse_metric(body.as_ref(), "internet_identity_min_user_number");
+        let (max_user_number, _) =
+            framework::parse_metric(body.as_ref(), "internet_identity_max_user_number");
+        assert_eq!(min_user_number, 10_000.);
+        assert_eq!(max_user_number, 3_784_872.);
+        Ok(())
+    }
+
+    /// Verifies that the user count metric is updated correctly.
+    #[test]
+    fn metrics_user_count_should_increase_after_register() -> Result<(), CallError> {
+        let env = StateMachine::new();
+        let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+
+        let http_response = api::http_request(
+            &env,
+            canister_id,
+            HttpRequest {
+                method: "GET".to_string(),
+                url: "/metrics".to_string(),
+                headers: vec![],
+                body: ByteBuf::new(),
+            },
+        )?;
+        let body = String::from_utf8_lossy(&*http_response.body);
+
+        let (user_count, _) =
+            framework::parse_metric(body.as_ref(), "internet_identity_user_count");
+        assert_eq!(user_count, 0.);
+
+        flows::register_anchor(&env, canister_id);
+
+        let http_response = api::http_request(
+            &env,
+            canister_id,
+            HttpRequest {
+                method: "GET".to_string(),
+                url: "/metrics".to_string(),
+                headers: vec![],
+                body: ByteBuf::new(),
+            },
+        )?;
+        let body = String::from_utf8_lossy(&*http_response.body);
+
+        let (user_count, _) =
+            framework::parse_metric(body.as_ref(), "internet_identity_user_count");
+        assert_eq!(user_count, 1.);
         Ok(())
     }
 }
