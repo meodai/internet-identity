@@ -1065,7 +1065,10 @@ mod http_tests {
         env.advance_time(Duration::from_secs(1));
         let challenge_2 = api::create_challenge(&env, canister_id);
 
-        println!("{:?}\n{:?}", challenge_1, challenge_2);
+        println!(
+            "{:?}\n{:?}",
+            challenge_1.challenge_key, challenge_2.challenge_key
+        );
 
         let metrics = flows::get_metrics(&env, canister_id);
         let (challenge_count, _) =
