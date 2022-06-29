@@ -20,26 +20,33 @@ fn ii_canister_can_be_installed() {
 fn stable_memory_backup() {
     let env = StateMachine::new();
     let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+    let canister_id2 = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
+    let anchor_number = flows::register_anchor(&env, canister_id2);
     // Read file into vector.
-    let bytes = std::fs::read(PathBuf::from(
-        "../../backend-tests/test-stable-memory-rdmx6-jaaaa-aaaaa-aaadq-cai.bin",
-    ))
-    .unwrap();
+    // let bytes = std::fs::read(PathBuf::from(
+    //     "../../backend-tests/test-stable-memory-rdmx6-jaaaa-aaaaa-aaadq-cai.bin",
+    // ))
+    // .unwrap();
     println!(
         "existing stable memory: {:?}",
         env.read_stable_memory(canister_id)[0..50].to_vec()
     );
-    env.write_stable_memory(canister_id, &bytes);
-    println!("writing stable memory: {:?}", bytes[0..50].to_vec());
+    let canister2_memory = env.read_stable_memory(canister_id2);
+    env.write_stable_memory(canister_id, &canister2_memory);
+    println!(
+        "writing stable memory: {:?}",
+        canister2_memory[0..50].to_vec()
+    );
+    let result1 = api::lookup(&env, canister_id2, anchor_number).unwrap();
+    println!("result origin canister: {:?}", result1);
+    let result2 = api::lookup(&env, canister_id, anchor_number).unwrap();
+    println!("result new canister: {:?}", result2);
     println!(
         "existing stable memory: {:?}",
         env.read_stable_memory(canister_id)[0..50].to_vec()
     );
-
-    api::create_challenge(&env, canister_id);
-    let result = api::lookup(&env, canister_id, 10_002);
-    println!("result: {:?}", result);
+    assert_eq!(result1, result2);
 }
 
 #[test]
