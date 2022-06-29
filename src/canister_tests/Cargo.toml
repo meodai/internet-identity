@@ -9,6 +9,7 @@ git-fetch-with-cli = true   # use the `git` executable for git operations
 [dev-dependencies]
 base64 = "0.13.0"
 flate2 = "1.0"
+hex = "0.4.3"
 lazy_static = "1.4"
 regex = "1.5.6"
 serde = "1"
@@ -22,9 +23,9 @@ internet_identity_interface = { path = "../internet_identity_interface" }
 candid = "0.7"
 ic-cdk = "0.5"
 sdk-ic-types = { version = "0.3", package = "ic-types" }
-ic-interfaces = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "057e4c27dad7d9466c919edc9f5f6d15fb421e11" }
-ic-types = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "057e4c27dad7d9466c919edc9f5f6d15fb421e11" }
-ic-certified-vars = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "057e4c27dad7d9466c919edc9f5f6d15fb421e11" }
-ic-crypto-internal-basic-sig-iccsa = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "057e4c27dad7d9466c919edc9f5f6d15fb421e11" }
-ic-error-types = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "057e4c27dad7d9466c919edc9f5f6d15fb421e11" }
-ic-state-machine-tests = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "057e4c27dad7d9466c919edc9f5f6d15fb421e11" }
+ic-interfaces = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "0743fc727346a1ef17e058aa53b3536ede21ee2a" }
+ic-types = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "0743fc727346a1ef17e058aa53b3536ede21ee2a" }
+ic-certified-vars = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "0743fc727346a1ef17e058aa53b3536ede21ee2a" }
+ic-crypto-internal-basic-sig-iccsa = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "0743fc727346a1ef17e058aa53b3536ede21ee2a" }
+ic-error-types = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "0743fc727346a1ef17e058aa53b3536ede21ee2a" }
+ic-state-machine-tests = { git = "ssh://git@gitlab.com/dfinity-lab/public/ic.git", rev = "0743fc727346a1ef17e058aa53b3536ede21ee2a" }
