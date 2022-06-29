@@ -4,6 +4,9 @@ use ic_error_types::ErrorCode;
 use ic_state_machine_tests::StateMachine;
 use internet_identity_interface as types;
 use regex::Regex;
+use std::fs::File;
+use std::io::{BufReader, Read};
+use std::path::PathBuf;
 
 #[test]
 fn ii_canister_can_be_installed() {
@@ -11,6 +14,32 @@ fn ii_canister_can_be_installed() {
     let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
     api::health_check(&env, canister_id);
+}
+
+#[test]
+fn stable_memory_backup() {
+    let env = StateMachine::new();
+    let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
+
+    // Read file into vector.
+    let bytes = std::fs::read(PathBuf::from(
+        "../../backend-tests/test-stable-memory-rdmx6-jaaaa-aaaaa-aaadq-cai.bin",
+    ))
+    .unwrap();
+    println!(
+        "existing stable memory: {:?}",
+        env.read_stable_memory(canister_id)[0..50].to_vec()
+    );
+    env.write_stable_memory(canister_id, &bytes);
+    println!("writing stable memory: {:?}", bytes[0..50].to_vec());
+    println!(
+        "existing stable memory: {:?}",
+        env.read_stable_memory(canister_id)[0..50].to_vec()
+    );
+
+    api::create_challenge(&env, canister_id);
+    let result = api::lookup(&env, canister_id, 10_002);
+    println!("result: {:?}", result);
 }
 
 #[test]
