@@ -156,6 +156,9 @@ mod stable_memory_tests {
         ));
 
         let env = StateMachine::new();
+        for _ in 0..7 {
+            env.create_canister(None);
+        }
         let canister_id = framework::install_ii_canister(&env, framework::II_WASM.clone());
 
         let stable_memory_backup = std::fs::read(PathBuf::from(
