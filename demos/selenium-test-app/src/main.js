@@ -1,4 +1,4 @@
-import { Actor, HttpAgent } from "@dfinity/agent";
+import { Actor, HttpAgent, toHex } from "@dfinity/agent";
 import {
   Delegation,
   DelegationChain,
@@ -16,6 +16,7 @@ const closeIiWindowBtn = document.getElementById("closeIIWindowBtn");
 const invalidDataBtn = document.getElementById("invalidDataBtn");
 const incompleteMessageBtn = document.getElementById("incompleteMessageBtn");
 const validMessageBtn = document.getElementById("validMessageBtn");
+const testBtn = document.getElementById("test");
 const messagesEl = document.getElementById("messages");
 const hostUrlEl = document.getElementById("hostUrl");
 const whoAmIResponseEl = document.getElementById("whoamiResponse");
@@ -169,6 +170,28 @@ const init = async () => {
     };
     addMessageElement(validMessage, false);
     iiProtocolTestWindow.postMessage(validMessage, iiUrlEl.value);
+  };
+
+  testBtn.onclick = async () => {
+    const httpAgent = new HttpAgent({
+      host: "https://fgte5-ciaaa-aaaad-aaatq-cai.ic0.app",
+    });
+    const readStateResponsePromise = await httpAgent.readState(
+      "fgte5-ciaaa-aaaad-aaatq-cai",
+      {
+        paths: [
+          [
+            new TextEncoder().encode("canister"),
+            Principal.fromText("fgte5-ciaaa-aaaad-aaatq-cai"),
+            new TextEncoder().encode("metadata"),
+            new TextEncoder().encode("alternate_name"),
+          ],
+        ],
+      }
+    );
+
+    console.log(readStateResponsePromise);
+    console.log(toHex(readStateResponsePromise.certificate));
   };
 };
 
