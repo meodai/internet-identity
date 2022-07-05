@@ -19,6 +19,8 @@ import waitForAuthRequest, { AuthContext } from "./postMessageInterface";
 import { toggleErrorMessage } from "../../utils/errorHelper";
 import { fetchDelegation } from "./fetchDelegation";
 import { registerIfAllowed } from "../../utils/registerAllowedCheck";
+import { Principal } from "@dfinity/principal";
+import * as https from "https";
 
 const pageContent = (
   hostName: string,
@@ -215,16 +217,35 @@ const validateDerivationOrigin = async (
     return true;
   }
 
-  // TODO: regex-check
-  // TODO: parse as url
+  const matches = /^https:\/\/([\w-])*(\.raw)?\.ic0\.app$/.exec(
+    derivationOrigin
+  );
+  if (matches === null) {
+    return false;
+  }
 
   try {
-    const response = await fetch(
-      derivationOrigin + "/.well-known/ii-alternative-domains",
+    const canisterId = Principal.fromText(matches[1]); // verifies that a valid canister id was provided
+    const alternativeDomains = (await fetch(
+      // SECURITY CRITICAL: always fetch non-raw
+      `https://${canisterId.toText()}.ic0.app/.well-known/ii-alternative-domains`,
+      // SECURITY CRITICAL: fail on redirects
       { redirect: "error" }
-    );
+    )
+      .then((response) => response.json())
+      .then((json) => json?.alternativeDomains)) as string[] | undefined;
+
+    if (alternativeDomains === undefined) {
+      return false;
+    }
+    return alternativeDomains.includes(derivationOrigin);
   } catch (e) {
-    console.log(e);
+    await displayError({
+      title: "Invalid derivation origin",
+      message: `${derivationOrigin} is not a valid derivation origin for ${authRequestOrigin}`,
+      detail: e.message,
+      primaryButton: "Ok",
+    });
   }
 
   return false;
