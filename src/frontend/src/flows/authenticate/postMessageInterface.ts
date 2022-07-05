@@ -6,6 +6,7 @@ export interface AuthRequest {
   kind: "authorize-client";
   sessionPublicKey: Uint8Array;
   maxTimeToLive?: bigint;
+  derivationOrigin?: string;
 }
 
 export interface Delegation {

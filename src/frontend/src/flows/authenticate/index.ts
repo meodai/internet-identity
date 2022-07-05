@@ -20,7 +20,11 @@ import { toggleErrorMessage } from "../../utils/errorHelper";
 import { fetchDelegation } from "./fetchDelegation";
 import { registerIfAllowed } from "../../utils/registerAllowedCheck";
 
-const pageContent = (hostName: string, userNumber?: bigint) => html` <style>
+const pageContent = (
+  hostName: string,
+  userNumber?: bigint,
+  derivationOrigin?: string
+) => html` <style>
     .anchorText {
       font-size: 1.5rem;
     }
@@ -109,6 +113,7 @@ const pageContent = (hostName: string, userNumber?: bigint) => html` <style>
     .container {
       padding: 3.5rem 1rem 2rem;
     }
+
     @media (min-width: 512px) {
       .container {
         padding: 3.5rem 2.5rem 2rem;
@@ -120,6 +125,7 @@ const pageContent = (hostName: string, userNumber?: bigint) => html` <style>
     <h1>Internet Identity</h1>
     <p>Authenticate to service:</p>
     <div class="host-name highlightBox hostName">${hostName}</div>
+    ${derivationOrigin === undefined ? "" : derivationOriginSection(hostName)}
     <p>Use Identity Anchor:</p>
 
     <div class="childContainer">
@@ -162,6 +168,11 @@ const pageContent = (hostName: string, userNumber?: bigint) => html` <style>
     ${navbar}
   </div>
   ${footer}`;
+
+const derivationOriginSection = (hostName: string) => html` <p>
+    Using the same principal as:
+  </p>
+  <div class="host-name highlightBox hostName">${hostName}</div>`;
 
 export interface AuthSuccess {
   userNumber: bigint;
