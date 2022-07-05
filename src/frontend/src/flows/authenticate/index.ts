@@ -195,10 +195,39 @@ export default async (): Promise<AuthSuccess> => {
         window.location.reload();
         return;
       }
+      if (authContext.authRequest.derivationOrigin !== undefined) {
+        await validateDerivationOrigin(
+          authContext.authRequest.derivationOrigin,
+          authContext.requestOrigin
+        );
+      }
       const userNumber = getUserNumber();
       init(authContext, userNumber).then(resolve);
     });
   });
+};
+
+const validateDerivationOrigin = async (
+  derivationOrigin: string,
+  authRequestOrigin: string
+): Promise<boolean> => {
+  if (derivationOrigin === authRequestOrigin) {
+    return true;
+  }
+
+  // TODO: regex-check
+  // TODO: parse as url
+
+  try {
+    const response = await fetch(
+      derivationOrigin + "/.well-known/ii-alternative-domains",
+      { redirect: "error" }
+    );
+  } catch (e) {
+    console.log(e);
+  }
+
+  return false;
 };
 
 const init = (
