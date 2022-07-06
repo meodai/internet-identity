@@ -10,6 +10,11 @@ path = "lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+lazy_static = "1.4"
 candid = "0.7"
 ic-cdk = "0.5"
 ic-cdk-macros = "0.5"
+serde = "1"
+serde_bytes = "0.11"
+serde_cbor = "0.11"
+serde_with = "1.14"

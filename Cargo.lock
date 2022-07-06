@@ -1470,6 +1470,11 @@ dependencies = [
  "candid",
  "ic-cdk",
  "ic-cdk-macros",
+ "lazy_static",
+ "serde",
+ "serde_bytes",
+ "serde_cbor",
+ "serde_with",
 ]
 
 [[package]]
