@@ -1,0 +1,10 @@
+{
+  "canisters": {
+    "assets1": {
+      "type": "assets",
+      "source": [
+        "assets1"
+      ]
+    }
+  }
+}
