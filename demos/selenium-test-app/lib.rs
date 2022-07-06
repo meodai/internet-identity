@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 thread_local! {
-    static ASSETS: RefCell<HashMap<&'static str, (Vec<(String, String)>, &'static [u8])>> = RefCell::new(HashMap::default());
+    static ASSETS: RefCell<HashMap<&'static str, (Vec<(String, String)>, Vec<u8>)>> = RefCell::new(HashMap::default());
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -36,15 +36,16 @@ fn whoami() -> Principal {
 
 #[update]
 fn update_alternative_origins(content: String) {
-    ASSETS.with(|mut a| {
-        a.get_mut().insert(
+    ASSETS.with(|a| {
+        let mut assets = a.borrow_mut();
+        assets.insert(
             "/.well-known/ii-alternative-origins",
             (
                 vec![(
                     "Content-Type".to_string(),
                     ContentType::JSON.to_mime_type_string(),
                 )],
-                content.as_bytes(),
+                content.as_bytes().to_vec(),
             ),
         )
     });
@@ -80,7 +81,7 @@ pub fn http_request(req: HttpRequest) -> HttpResponse {
             HttpResponse {
                 status_code: 200,
                 headers,
-                body: Cow::Borrowed(Bytes::new(value)),
+                body: Cow::Owned(ByteBuf::from(value.clone())),
             }
         }
         None => HttpResponse {
@@ -102,7 +103,7 @@ pub fn init_assets() {
                 "Content-Type".to_string(),
                 content_type.to_mime_type_string(),
             ));
-            assets.insert(path, (headers, content));
+            assets.insert(path, (headers, content.to_vec()));
         }
     });
 }
