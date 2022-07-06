@@ -1,0 +1,22 @@
+{
+  "canisters": {
+    "selenium-test-app": {
+      "type": "custom",
+      "candid": "hello.did",
+      "wasm": "selenium-test-app.wasm",
+      "build": "./build.sh"
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "0.0.0.0:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}

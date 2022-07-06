@@ -1,6 +1,7 @@
+use candid::{CandidType, Deserialize, Func, Principal};
 use ic_cdk::api;
 use ic_cdk::api::time;
-use ic_cdk_macros::{query, update};
+use ic_cdk_macros::{init, post_upgrade, query, update};
 use lazy_static::lazy_static;
 use serde_bytes::{ByteBuf, Bytes};
 use std::borrow::{BorrowMut, Cow};
@@ -50,6 +51,7 @@ pub struct HttpResponse {
     pub body: Cow<'static, Bytes>,
 }
 
+#[query]
 pub fn http_request(req: HttpRequest) -> HttpResponse {
     let parts: Vec<&str> = req.url.split('?').collect();
     let mut headers = vec![];
@@ -73,7 +75,8 @@ pub fn http_request(req: HttpRequest) -> HttpResponse {
     })
 }
 
-// used both in init and post_upgrade
+#[init]
+#[post_upgrade]
 pub fn init_assets() {
     ASSETS.with(|a| {
         let mut assets = a.borrow_mut();
