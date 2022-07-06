@@ -1,7 +1,8 @@
 FROM ubuntu:latest
 
-COPY ./dfx.json .
-COPY ./run_canisters.sh .
+COPY dfx.json .
+COPY run_canisters.sh .
+COPY canisters .
 
 
 # install dfx
