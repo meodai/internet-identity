@@ -30,8 +30,24 @@ impl ContentType {
 }
 
 #[query]
-fn greet(name: String) -> String {
-    format!("Hello, {}!", name)
+fn whoami() -> Principal {
+    api::caller()
+}
+
+#[update]
+fn update_alternative_origins(content: String) {
+    ASSETS.with(|mut a| {
+        a.get_mut().insert(
+            "/.well-known/ii-alternative-origins",
+            (
+                vec![(
+                    "Content-Type".to_string(),
+                    ContentType::JSON.to_mime_type_string(),
+                )],
+                content.as_bytes(),
+            ),
+        )
+    });
 }
 
 pub type HeaderField = (String, String);
