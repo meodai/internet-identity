@@ -20,7 +20,10 @@ import { toggleErrorMessage } from "../../utils/errorHelper";
 import { fetchDelegation } from "./fetchDelegation";
 import { registerIfAllowed } from "../../utils/registerAllowedCheck";
 import { Principal } from "@dfinity/principal";
-import * as https from "https";
+import {
+  sanitizeDerivationOrigin,
+  validateDerivationOrigin,
+} from "./validateDerivationOrigin";
 
 const pageContent = (
   hostName: string,
@@ -190,72 +193,33 @@ export interface AuthSuccess {
 export default async (): Promise<AuthSuccess> => {
   return new Promise((resolve) => {
     withLoader(async () => {
-      const authContext = await waitForAuthRequest();
+      let authContext = await waitForAuthRequest();
       if (authContext === null) {
         // The user has manually navigated to "/#authorize".
         window.location.hash = "";
         window.location.reload();
         return;
       }
-      if (authContext.authRequest.derivationOrigin !== undefined) {
-        await validateDerivationOrigin(
-          authContext.authRequest.derivationOrigin,
-          authContext.requestOrigin
-        );
-      }
+
+      // if the derivationOrigin is invalid sanitizeDerivationOrigin will show an error, notify the client application and then close the window
+      // --> process is aborted here
+      authContext = await sanitizeDerivationOrigin(authContext);
+
       const userNumber = getUserNumber();
       init(authContext, userNumber).then(resolve);
     });
   });
 };
 
-const validateDerivationOrigin = async (
-  derivationOrigin: string,
-  authRequestOrigin: string
-): Promise<boolean> => {
-  if (derivationOrigin === authRequestOrigin) {
-    return true;
-  }
-
-  const matches = /^https:\/\/([\w-])*(\.raw)?\.ic0\.app$/.exec(
-    derivationOrigin
-  );
-  if (matches === null) {
-    return false;
-  }
-
-  try {
-    const canisterId = Principal.fromText(matches[1]); // verifies that a valid canister id was provided
-    const alternativeDomains = (await fetch(
-      // SECURITY CRITICAL: always fetch non-raw
-      `https://${canisterId.toText()}.ic0.app/.well-known/ii-alternative-domains`,
-      // SECURITY CRITICAL: fail on redirects
-      { redirect: "error" }
-    )
-      .then((response) => response.json())
-      .then((json) => json?.alternativeDomains)) as string[] | undefined;
-
-    if (alternativeDomains === undefined) {
-      return false;
-    }
-    return alternativeDomains.includes(derivationOrigin);
-  } catch (e) {
-    await displayError({
-      title: "Invalid derivation origin",
-      message: `${derivationOrigin} is not a valid derivation origin for ${authRequestOrigin}`,
-      detail: e.message,
-      primaryButton: "Ok",
-    });
-  }
-
-  return false;
-};
-
 const init = (
   authContext: AuthContext,
   userNumber?: bigint
 ): Promise<AuthSuccess> => {
-  displayPage(authContext.requestOrigin, userNumber);
+  displayPage(
+    authContext.requestOrigin,
+    userNumber,
+    authContext.authRequest.derivationOrigin
+  );
   initManagementBtn();
   initRecovery();
 
@@ -385,9 +349,13 @@ const authenticateUser = async (
   return init(authContext, userNumber);
 };
 
-const displayPage = (origin: string, userNumber?: bigint) => {
+const displayPage = (
+  origin: string,
+  userNumber?: bigint,
+  derivationOrigin?: string
+) => {
   const container = document.getElementById("pageContent") as HTMLElement;
-  render(pageContent(origin, userNumber), container);
+  render(pageContent(origin, userNumber, derivationOrigin), container);
 };
 
 async function handleAuthSuccess(

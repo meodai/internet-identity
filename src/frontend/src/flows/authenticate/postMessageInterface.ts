@@ -24,6 +24,11 @@ export interface AuthResponseSuccess {
   userPublicKey: Uint8Array;
 }
 
+interface AuthResponseFailure {
+  kind: "authorize-client-failure";
+  text: string;
+}
+
 /**
  * All information required to process an authentication request received from
  * a client application.
@@ -38,10 +43,11 @@ export interface AuthContext {
    */
   requestOrigin: string;
   /**
-   * Callback to send a result back to the sender. We currently only send
-   * either a success message or nothing at all.
+   * Callback to send a result back to the sender.
    */
-  postMessageCallback: (message: AuthResponseSuccess) => void;
+  postMessageCallback: (
+    message: AuthResponseSuccess | AuthResponseFailure
+  ) => void;
 }
 
 // A message to signal that the II is ready to receive authorization requests.
