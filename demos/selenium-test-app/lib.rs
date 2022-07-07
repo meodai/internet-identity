@@ -40,19 +40,24 @@ fn whoami() -> Principal {
 #[update]
 fn update_alternative_origins(content: String) {
     ASSETS.with(|a| {
-        let mut assets = a.borrow_mut();
-        assets.insert(
-            "/.well-known/ii-alternative-origins",
-            (
-                vec![(
-                    "Content-Type".to_string(),
-                    ContentType::JSON.to_mime_type_string(),
-                )],
-                content.as_bytes().to_vec(),
-            ),
-        )
+        ASSET_HASHES.with(|ah| {
+            let mut assets = a.borrow_mut();
+            let mut asset_hashes = ah.borrow_mut();
+            let path = "/.well-known/ii-alternative-origins";
+            assets.insert(
+                path,
+                (
+                    vec![(
+                        "Content-Type".to_string(),
+                        ContentType::JSON.to_mime_type_string(),
+                    )],
+                    content.as_bytes().to_vec(),
+                ),
+            );
+            asset_hashes.insert(path, sha2::Sha256::digest(content.as_bytes()).into());
+            update_root_hash(&asset_hashes);
+        });
     });
-    init_assets();
 }
 
 pub type HeaderField = (String, String);
