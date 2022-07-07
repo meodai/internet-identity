@@ -13,7 +13,6 @@ export const validateDerivationOrigin = async (
     derivationOrigin === authRequestOrigin
   ) {
     // this is the default behaviour -> no further validation necessary
-    console.log("derivationOrigin validation: equal or undefined");
     return { result: "valid" };
   }
 
@@ -22,7 +21,6 @@ export const validateDerivationOrigin = async (
     derivationOrigin
   );
   if (matches === null) {
-    console.log("derivationOrigin validation: invalid, no match");
     return {
       result: "invalid",
       message:
@@ -42,7 +40,6 @@ export const validateDerivationOrigin = async (
 
     // check for expected property
     if (!Array.isArray(alternativeOriginsObj?.alternativeOrigins)) {
-      console.log("derivationOrigin validation: invalid, wrong format");
       return {
         result: "invalid",
         message: `resource ${alternativeOriginsUrl} has invalid format: received ${alternativeOriginsObj}`,
@@ -51,15 +48,12 @@ export const validateDerivationOrigin = async (
 
     // check allowed alternative origins
     if (!alternativeOriginsObj.alternativeOrigins.includes(authRequestOrigin)) {
-      console.log("derivationOrigin validation: invalid, not whitelisted");
-
       return {
         result: "invalid",
         message: `"${authRequestOrigin}" is not listed in the list of allowed alternative origins. Allowed alternative origins: ${alternativeOriginsObj.alternativeOrigins}`,
       };
     }
   } catch (e) {
-    console.log("derivationOrigin validation: invalid, exception " + e.message);
     // return more info
     return {
       result: "invalid",
@@ -68,6 +62,5 @@ export const validateDerivationOrigin = async (
   }
 
   // all checks passed --> valid
-  console.log("derivationOrigin validation: valid, checks passed");
   return { result: "valid" };
 };
