@@ -1,10 +1,20 @@
 {
   "canisters": {
-    "assets1": {
-      "type": "assets",
-      "source": [
-        "assets1"
-      ]
+    "internet_identity": {
+      "type": "custom",
+      "candid": "./canisters/internet_identity.did",
+      "wasm": "./canisters/internet_identity.wasm"
+    },
+    "selenium-test-app": {
+      "type": "custom",
+      "candid": "./canisters/selenium-test-app.did",
+      "wasm":   "./canisters/selenium-test-app.wasm"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "0.0.0.0:8000",
+      "type": "ephemeral"
     }
   }
 }
