@@ -71,7 +71,11 @@ export default async function waitForAuthRequest(): Promise<AuthContext | null> 
     window.addEventListener("message", async (event) => {
       const message = event.data;
       if (message.kind === "authorize-client") {
-        console.log("Handling authorize-client request.");
+        console.log(
+          `Handling authorize-client request ${JSON.stringify(message, (_, v) =>
+            typeof v === "bigint" ? v.toString() : v
+          )}`
+        );
         resolve({
           authRequest: message,
           requestOrigin: event.origin,

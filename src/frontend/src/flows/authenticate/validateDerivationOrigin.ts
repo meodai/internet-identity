@@ -1,42 +1,4 @@
-import { displayError } from "../../components/displayError";
 import { Principal } from "@dfinity/principal";
-import { AuthContext } from "./postMessageInterface";
-
-export const sanitizeDerivationOrigin = async (
-  authContext: AuthContext
-): Promise<AuthContext> => {
-  const validationResult = await validateDerivationOrigin(
-    authContext.requestOrigin,
-    authContext.authRequest.derivationOrigin
-  );
-
-  if (validationResult.result === "valid") {
-    return authContext;
-  }
-
-  await displayError({
-    title: "Invalid derivation origin",
-    message: `"${authContext.authRequest.derivationOrigin}" is not a valid derivation origin for "${authContext.requestOrigin}"`,
-    detail: validationResult.message,
-    primaryButton: "Close",
-  });
-
-  // notify the client application
-  // do this after showing the error because the client application might close the window immediately after receiving the message and might not show the user what's going on
-  authContext.postMessageCallback({
-    kind: "authorize-client-failure",
-    text: `Invalid derivation origin: ${validationResult.message}`,
-  });
-
-  // we cannot recover from this, retrying or reloading won't help
-  // close the window as it returns the user to the offending application that opened II for authentication
-  window.close();
-
-  // return the sanitized authContext anyway in case the browsing context is not script closable
-  // (this should never be the case for an authentication flow)
-  authContext.authRequest.derivationOrigin = undefined;
-  return authContext;
-};
 
 export type ValidationResult =
   | { result: "valid" }
@@ -51,6 +13,7 @@ export const validateDerivationOrigin = async (
     derivationOrigin === authRequestOrigin
   ) {
     // this is the default behaviour -> no further validation necessary
+    console.log("derivationOrigin validation: equal or undefined");
     return { result: "valid" };
   }
 
@@ -59,6 +22,7 @@ export const validateDerivationOrigin = async (
     derivationOrigin
   );
   if (matches === null) {
+    console.log("derivationOrigin validation: invalid, no match");
     return {
       result: "invalid",
       message:
@@ -78,6 +42,7 @@ export const validateDerivationOrigin = async (
 
     // check for expected property
     if (!Array.isArray(alternativeOriginsObj?.alternativeOrigins)) {
+      console.log("derivationOrigin validation: invalid, wrong format");
       return {
         result: "invalid",
         message: `resource ${alternativeOriginsUrl} has invalid format: received ${alternativeOriginsObj}`,
@@ -86,12 +51,15 @@ export const validateDerivationOrigin = async (
 
     // check allowed alternative origins
     if (!alternativeOriginsObj.alternativeOrigins.includes(authRequestOrigin)) {
+      console.log("derivationOrigin validation: invalid, not whitelisted");
+
       return {
         result: "invalid",
         message: `"${authRequestOrigin}" is not listed in the list of allowed alternative origins. Allowed alternative origins: ${alternativeOriginsObj.alternativeOrigins}`,
       };
     }
   } catch (e) {
+    console.log("derivationOrigin validation: invalid, exception " + e.message);
     // return more info
     return {
       result: "invalid",
@@ -100,5 +68,6 @@ export const validateDerivationOrigin = async (
   }
 
   // all checks passed --> valid
+  console.log("derivationOrigin validation: valid, checks passed");
   return { result: "valid" };
 };

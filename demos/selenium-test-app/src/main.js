@@ -199,7 +199,7 @@ const init = async () => {
       alert("Open II tab first");
       return;
     }
-    let message = JSON.parse(messagesEl.value);
+    let message = JSON.parse(customMessageEl.value);
     addMessageElement(message, false);
     iiProtocolTestWindow.postMessage(message, iiUrlEl.value);
   };

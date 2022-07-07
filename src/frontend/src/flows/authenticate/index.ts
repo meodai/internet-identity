@@ -19,7 +19,7 @@ import waitForAuthRequest, { AuthContext } from "./postMessageInterface";
 import { toggleErrorMessage } from "../../utils/errorHelper";
 import { fetchDelegation } from "./fetchDelegation";
 import { registerIfAllowed } from "../../utils/registerAllowedCheck";
-import { sanitizeDerivationOrigin } from "./validateDerivationOrigin";
+import { validateDerivationOrigin } from "./validateDerivationOrigin";
 
 const pageContent = (
   hostName: string,
@@ -187,23 +187,54 @@ export interface AuthSuccess {
  * Internet Identity window.
  */
 export default async (): Promise<AuthSuccess> => {
-  return new Promise((resolve) => {
-    withLoader(async () => {
-      let authContext = await waitForAuthRequest();
-      if (authContext === null) {
-        // The user has manually navigated to "/#authorize".
-        window.location.hash = "";
-        window.location.reload();
-        return;
-      }
-
-      // if the derivationOrigin is invalid sanitizeDerivationOrigin will show an error, notify the client application and then close the window
-      // --> process is aborted here
-      authContext = await sanitizeDerivationOrigin(authContext);
-
-      const userNumber = getUserNumber();
-      init(authContext, userNumber).then(resolve);
+  const authContext = await withLoader(() => waitForAuthRequest());
+  if (authContext === null) {
+    // The user has manually navigated to "/#authorize".
+    window.location.hash = "";
+    window.location.reload();
+    return new Promise((_resolve) => {
+      // never resolve
     });
+  }
+
+  const validationResult = await withLoader(
+    async () =>
+      await validateDerivationOrigin(
+        authContext.requestOrigin,
+        authContext.authRequest.derivationOrigin
+      )
+  );
+
+  if (validationResult.result !== "valid") {
+    await displayError({
+      title: "Invalid derivation origin",
+      message: `"${authContext.authRequest.derivationOrigin}" is not a valid derivation origin for "${authContext.requestOrigin}"`,
+      detail: validationResult.message,
+      primaryButton: "Close",
+    });
+
+    // notify the client application
+    // do this after showing the error because the client application might close the window immediately after receiving the message and might not show the user what's going on
+    authContext.postMessageCallback({
+      kind: "authorize-client-failure",
+      text: `Invalid derivation origin: ${validationResult.message}`,
+    });
+
+    // we cannot recover from this, retrying or reloading won't help
+    // close the window as it returns the user to the offending application that opened II for authentication
+    window.close();
+
+    // sanitize authContext anyway in case the browsing context is not script closable
+    // (this should never be the case for an authentication flow)
+    authContext.authRequest.derivationOrigin = undefined;
+    return new Promise((_resolve) => {
+      // never resolve
+    });
+  }
+
+  const userNumber = getUserNumber();
+  return new Promise((resolve) => {
+    init(authContext, userNumber).then(resolve);
   });
 };
 
