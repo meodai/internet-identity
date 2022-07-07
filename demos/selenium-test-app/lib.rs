@@ -1,10 +1,9 @@
-use candid::{CandidType, Deserialize, Func, Principal};
+use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api;
-use ic_cdk::api::time;
 use ic_cdk_macros::{init, post_upgrade, query, update};
 use lazy_static::lazy_static;
 use serde_bytes::{ByteBuf, Bytes};
-use std::borrow::{BorrowMut, Cow};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 

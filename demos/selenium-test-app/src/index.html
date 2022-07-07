@@ -50,6 +50,8 @@
       </div>
       <button id="signinBtn">Sign In</button>
       <button id="signoutBtn">Sign Out</button>
+      <h3>/.well-known/ii-alternative-origins</h3>
+      <div id="alternativeOrigins"></div>
       <h3>Principal:</h3>
       <div id="principal"></div>
       <h3>Delegation:</h3>
@@ -74,13 +76,20 @@
       <button id="whoamiBtn">Who Am I?</button>
       <div id="whoamiResponse"></div>
     </div>
-    <h1>Protocol Tests</h1>
-    <button id="openIiWindowBtn">Open II tab</button>
-    <button id="invalidDataBtn">Send Invalid Data</button>
-    <button id="incompleteMessageBtn">Send incomplete message</button>
-    <button id="validMessageBtn">Send valid message</button>
-    <button id="closeIIWindowBtn">Close II tab</button>
-    <h3>WindowPostMessages:</h3>
-    <div id="messages"></div>
-  </body>
+    <div>
+      <label for="newAlternativeOrigins" style="display: inline-block; width: 120px">
+        Set new value for /.well-known/ii-alternative-origins:
+      </label>
+      <input type="text" id="newAlternativeOrigins" />
+      <button id="updateNewAlternativeOrigins">Update Value</button>
+    </div>
+      <h1>Protocol Tests</h1>
+      <button id="openIiWindowBtn">Open II tab</button>
+      <button id="invalidDataBtn">Send Invalid Data</button>
+      <button id="incompleteMessageBtn">Send incomplete message</button>
+      <button id="validMessageBtn">Send valid message</button>
+      <button id="closeIIWindowBtn">Close II tab</button>
+      <h3>WindowPostMessages:</h3>
+      <div id="messages"></div>
+    </body>
 </html>

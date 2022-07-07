@@ -11,6 +11,9 @@ import { Principal } from "@dfinity/principal";
 const signInBtn = document.getElementById("signinBtn");
 const signOutBtn = document.getElementById("signoutBtn");
 const whoamiBtn = document.getElementById("whoamiBtn");
+const updateAlternativeOriginsBtn = document.getElementById(
+  "updateNewAlternativeOrigins"
+);
 const openIiWindowBtn = document.getElementById("openIiWindowBtn");
 const closeIiWindowBtn = document.getElementById("closeIIWindowBtn");
 const invalidDataBtn = document.getElementById("invalidDataBtn");
@@ -19,6 +22,10 @@ const validMessageBtn = document.getElementById("validMessageBtn");
 const messagesEl = document.getElementById("messages");
 const hostUrlEl = document.getElementById("hostUrl");
 const whoAmIResponseEl = document.getElementById("whoamiResponse");
+const alternativeOriginsEl = document.getElementById("alternativeOrigins");
+const newAlternativeOriginsEl = document.getElementById(
+  "newAlternativeOrigins"
+);
 const canisterIdEl = document.getElementById("canisterId");
 const principalEl = document.getElementById("principal");
 const delegationEl = document.getElementById("delegation");
@@ -31,7 +38,7 @@ let authClient;
 let iiProtocolTestWindow;
 let localIdentity;
 
-const updateView = (identity) => {
+const updateDelegationView = (identity) => {
   principalEl.innerText = identity.getPrincipal();
   if (identity instanceof DelegationIdentity) {
     delegationEl.innerText = JSON.stringify(
@@ -51,6 +58,11 @@ const updateView = (identity) => {
     delegationEl.innerText = "Current identity is not a DelegationIdentity";
     expirationEl.innerText = "N/A";
   }
+};
+
+const updateAlternativeOrigins = async () => {
+  const response = await fetch("/.well-known/ii-alternative-origins");
+  alternativeOriginsEl.innerText = await response.text();
 };
 
 function addMessageElement(message, received) {
@@ -92,7 +104,7 @@ window.addEventListener("message", (event) => {
         delegations,
         event.data.userPublicKey.buffer
       );
-      updateView(
+      updateDelegationView(
         DelegationIdentity.fromDelegation(localIdentity, delegationChain)
       );
     }
@@ -101,8 +113,8 @@ window.addEventListener("message", (event) => {
 
 const init = async () => {
   authClient = await AuthClient.create();
-  updateView(authClient.getIdentity());
-  console.log(derivationOriginEl.value);
+  updateDelegationView(authClient.getIdentity());
+  await updateAlternativeOrigins();
   let derivationOrigin =
     derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
   signInBtn.onclick = async () => {
@@ -111,20 +123,20 @@ const init = async () => {
         identityProvider: iiUrlEl.value,
         maxTimeToLive: BigInt(maxTimeToLive.value),
         derivationOrigin,
-        onSuccess: () => updateView(authClient.getIdentity()),
+        onSuccess: () => updateDelegationView(authClient.getIdentity()),
       });
     } else {
       authClient.login({
         identityProvider: iiUrlEl.value,
         derivationOrigin,
-        onSuccess: () => updateView(authClient.getIdentity()),
+        onSuccess: () => updateDelegationView(authClient.getIdentity()),
       });
     }
   };
 
   signOutBtn.onclick = async () => {
     await authClient.logout();
-    updateView(authClient.getIdentity());
+    updateDelegationView(authClient.getIdentity());
   };
 
   openIiWindowBtn.onclick = () => {
@@ -174,6 +186,23 @@ const init = async () => {
     };
     addMessageElement(validMessage, false);
     iiProtocolTestWindow.postMessage(validMessage, iiUrlEl.value);
+  };
+
+  updateAlternativeOriginsBtn.onclick = async () => {
+    const idlFactory = ({ IDL }) =>
+      IDL.Service({
+        update_alternative_origins: IDL.Func([IDL.Text], [], []),
+      });
+
+    const canisterId = Principal.fromText(canisterIdEl.value);
+    const httpAgent = new HttpAgent({ host: hostUrlEl.value });
+    await httpAgent.fetchRootKey();
+    const actor = Actor.createActor(idlFactory, {
+      agent: httpAgent,
+      canisterId,
+    });
+    await actor.update_alternative_origins(newAlternativeOriginsEl.value);
+    await updateAlternativeOrigins();
   };
 };
 

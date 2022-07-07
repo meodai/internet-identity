@@ -76,6 +76,25 @@ test("Register new identity and login with it", async () => {
   });
 }, 300_000);
 
+test("Register new identity and login with it using a derivation origin", async () => {
+  await runInBrowser(async (browser: WebdriverIO.Browser) => {
+    await browser.url(II_URL);
+    const welcomeView = new WelcomeView(browser);
+    await welcomeView.waitForDisplay();
+    await welcomeView.register();
+    await addVirtualAuthenticator(browser);
+    await browser.url(II_URL);
+    const userNumber = await FLOWS.registerNewIdentityWelcomeView(
+      DEVICE_NAME1,
+      browser
+    );
+    const mainView = new MainView(browser);
+    await mainView.waitForDeviceDisplay(DEVICE_NAME1);
+    await mainView.logout();
+    await FLOWS.login(userNumber, DEVICE_NAME1, browser);
+  });
+}, 300_000);
+
 test("Register new identity and add additional device", async () => {
   await runInBrowser(async (browser: WebdriverIO.Browser) => {
     const firstAuthenticator = await addVirtualAuthenticator(browser);
