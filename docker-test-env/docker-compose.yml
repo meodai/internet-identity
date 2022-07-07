@@ -11,12 +11,31 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - ic
+    extra_hosts:
+      - "rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:127.0.0.1"
+      - "ryjl3-tyaaa-aaaaa-aaaba-cai.localhost:127.0.0.1"
   nginx:
     build: reverse_proxy
     ports:
       - "8443:443"
+    networks:
+      ic:
+        aliases:
+          - ic0.app
+          # internet identity
+          - rrkah-fqaaa-aaaaa-aaaaq-cai.ic0.app
+          - identity.ic0.app
+          # selenium test app
+          - ryjl3-tyaaa-aaaaa-aaaba-cai.ic0.app
+          - nice-name.com
   selenium:
     image: selenium/standalone-chrome
     ports:
       - "4444:4444"
       - "7900:7900"
+    networks:
+      - ic
+networks:
+  ic:
