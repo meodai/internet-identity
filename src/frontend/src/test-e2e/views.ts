@@ -482,7 +482,7 @@ export class DemoAppView extends View {
   }
 
   async setDerivationOrigin(derivationOrigin: string): Promise<void> {
-    await fillText(this.browser, "maxTimeToLive", derivationOrigin);
+    await fillText(this.browser, "derivationOrigin", derivationOrigin);
   }
 
   async whoami(replicaUrl: string, testCanister: string): Promise<string> {
