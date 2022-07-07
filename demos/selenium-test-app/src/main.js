@@ -19,6 +19,8 @@ const closeIiWindowBtn = document.getElementById("closeIIWindowBtn");
 const invalidDataBtn = document.getElementById("invalidDataBtn");
 const incompleteMessageBtn = document.getElementById("incompleteMessageBtn");
 const validMessageBtn = document.getElementById("validMessageBtn");
+const customMessageEl = document.getElementById("customMessage");
+const customMessageBtn = document.getElementById("customMessageBtn");
 const messagesEl = document.getElementById("messages");
 const hostUrlEl = document.getElementById("hostUrl");
 const whoAmIResponseEl = document.getElementById("whoamiResponse");
@@ -187,6 +189,15 @@ const init = async () => {
     };
     addMessageElement(validMessage, false);
     iiProtocolTestWindow.postMessage(validMessage, iiUrlEl.value);
+  };
+
+  customMessageBtn.onclick = () => {
+    if (!iiProtocolTestWindow) {
+      alert("Open II tab first");
+      return;
+    }
+    addMessageElement(messagesEl.value, false);
+    iiProtocolTestWindow.postMessage(messagesEl.value, iiUrlEl.value);
   };
 
   updateAlternativeOriginsBtn.onclick = async () => {

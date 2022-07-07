@@ -19,11 +19,7 @@ import waitForAuthRequest, { AuthContext } from "./postMessageInterface";
 import { toggleErrorMessage } from "../../utils/errorHelper";
 import { fetchDelegation } from "./fetchDelegation";
 import { registerIfAllowed } from "../../utils/registerAllowedCheck";
-import { Principal } from "@dfinity/principal";
-import {
-  sanitizeDerivationOrigin,
-  validateDerivationOrigin,
-} from "./validateDerivationOrigin";
+import { sanitizeDerivationOrigin } from "./validateDerivationOrigin";
 
 const pageContent = (
   hostName: string,

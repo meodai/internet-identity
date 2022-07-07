@@ -83,13 +83,20 @@
       <input type="text" id="newAlternativeOrigins" />
       <button id="updateNewAlternativeOrigins">Update Value</button>
     </div>
-      <h1>Protocol Tests</h1>
-      <button id="openIiWindowBtn">Open II tab</button>
-      <button id="invalidDataBtn">Send Invalid Data</button>
-      <button id="incompleteMessageBtn">Send incomplete message</button>
-      <button id="validMessageBtn">Send valid message</button>
-      <button id="closeIIWindowBtn">Close II tab</button>
-      <h3>WindowPostMessages:</h3>
-      <div id="messages"></div>
-    </body>
+    <h1>Protocol Tests</h1>
+    <button id="openIiWindowBtn">Open II tab</button>
+    <button id="invalidDataBtn">Send Invalid Data</button>
+    <button id="incompleteMessageBtn">Send incomplete message</button>
+    <button id="validMessageBtn">Send valid message</button>
+    <button id="closeIIWindowBtn">Close II tab</button>
+    <div>
+      <label for="customMessage" style="display: inline-block; width: 120px">
+        Set custom message:
+      </label>
+      <input type="text" id="customMessage" />
+      <button id="customMessageBtn">Send Message</button>
+    </div>
+    <h3>WindowPostMessages:</h3>
+    <div id="messages"></div>
+  </body>
 </html>
