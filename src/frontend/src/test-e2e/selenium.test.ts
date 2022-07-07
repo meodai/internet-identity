@@ -257,6 +257,9 @@ test("Log into client application, after registration using derivation origin", 
       WHOAMI_CANISTER,
       '{"alternativeOrigins":["https://nice-name.com"]}'
     );
+    await demoAppView.setDerivationOrigin(
+      "https://ryjl3-tyaaa-aaaaa-aaaba-cai.ic0.app"
+    );
     expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
     await demoAppView.signin();
     await switchToPopup(browser);
