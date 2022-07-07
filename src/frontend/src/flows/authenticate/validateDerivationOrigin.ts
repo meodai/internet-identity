@@ -17,14 +17,14 @@ export const validateDerivationOrigin = async (
   }
 
   // check format of derivationOrigin
-  const matches = /^https:\/\/([\w-])*(\.raw)?\.ic0\.app$/.exec(
+  const matches = /^https:\/\/([\w-]*)(\.raw)?\.ic0\.app$/.exec(
     derivationOrigin
   );
   if (matches === null) {
     return {
       result: "invalid",
       message:
-        'derivationOrigin does not match regex "^https:\\/\\/([\\w-])*(\\.raw)?\\.ic0\\.app$"',
+        'derivationOrigin does not match regex "^https:\\/\\/([\\w-]*)(\\.raw)?\\.ic0\\.app$"',
     };
   }
 

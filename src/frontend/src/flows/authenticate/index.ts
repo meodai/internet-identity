@@ -208,7 +208,7 @@ export default async (): Promise<AuthSuccess> => {
   );
   if (validationResult.result === "invalid") {
     await displayError({
-      title: "Invalid derivation origin",
+      title: "Invalid Derivation Origin",
       message: `"${authContext.authRequest.derivationOrigin}" is not a valid derivation origin for "${authContext.requestOrigin}"`,
       detail: validationResult.message,
       primaryButton: "Close",
