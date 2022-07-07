@@ -183,9 +183,12 @@ const init = async () => {
       return;
     }
     localIdentity = Ed25519KeyIdentity.generate();
+    let derivationOrigin =
+      derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
     const validMessage = {
       kind: "authorize-client",
       sessionPublicKey: new Uint8Array(localIdentity.getPublicKey().toDer()),
+      derivationOrigin,
     };
     addMessageElement(validMessage, false);
     iiProtocolTestWindow.postMessage(validMessage, iiUrlEl.value);
@@ -196,8 +199,9 @@ const init = async () => {
       alert("Open II tab first");
       return;
     }
-    addMessageElement(messagesEl.value, false);
-    iiProtocolTestWindow.postMessage(messagesEl.value, iiUrlEl.value);
+    let message = JSON.parse(messagesEl.value);
+    addMessageElement(message, false);
+    iiProtocolTestWindow.postMessage(message, iiUrlEl.value);
   };
 
   updateAlternativeOriginsBtn.onclick = async () => {
