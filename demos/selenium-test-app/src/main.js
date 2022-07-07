@@ -117,10 +117,10 @@ const init = async () => {
   authClient = await AuthClient.create();
   updateDelegationView(authClient.getIdentity());
   await updateAlternativeOrigins();
-  let derivationOrigin =
-    derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
   canisterIdEl.value = canisterId;
   signInBtn.onclick = async () => {
+    let derivationOrigin =
+      derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
     if (BigInt(maxTimeToLiveEl.value) > BigInt(0)) {
       authClient.login({
         identityProvider: iiUrlEl.value,
