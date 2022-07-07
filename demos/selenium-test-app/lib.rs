@@ -1,14 +1,18 @@
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api;
 use ic_cdk_macros::{init, post_upgrade, query, update};
+use ic_certified_map::{labeled_hash, AsHashTree, Hash, RbTree};
 use lazy_static::lazy_static;
+use serde::Serialize;
 use serde_bytes::{ByteBuf, Bytes};
+use sha2::Digest;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 thread_local! {
     static ASSETS: RefCell<HashMap<&'static str, (Vec<(String, String)>, Vec<u8>)>> = RefCell::new(HashMap::default());
+    static ASSET_HASHES: RefCell<RbTree<&'static str, [u8; 32]>> = RefCell::new(RbTree::default());
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -48,6 +52,7 @@ fn update_alternative_origins(content: String) {
             ),
         )
     });
+    init_assets();
 }
 
 pub type HeaderField = (String, String);
@@ -70,10 +75,15 @@ pub struct HttpResponse {
 #[query]
 pub fn http_request(req: HttpRequest) -> HttpResponse {
     let parts: Vec<&str> = req.url.split('?').collect();
+    let path = parts[0];
     let mut headers = vec![];
     headers.push(("Access-Control-Allow-Origin".to_string(), "*".to_string()));
 
-    ASSETS.with(|a| match a.borrow().get(parts[0]) {
+    let certificate_header =
+        ASSET_HASHES.with(|a| make_asset_certificate_header(&a.borrow(), path));
+    headers.push(certificate_header);
+
+    ASSETS.with(|a| match a.borrow().get(path) {
         Some((asset_headers, value)) => {
             headers.append(&mut asset_headers.clone());
 
@@ -86,25 +96,58 @@ pub fn http_request(req: HttpRequest) -> HttpResponse {
         None => HttpResponse {
             status_code: 404,
             headers,
-            body: Cow::Owned(ByteBuf::from(format!("Asset {} not found.", parts[0]))),
+            body: Cow::Owned(ByteBuf::from(format!("Asset {} not found.", path))),
         },
     })
+}
+
+fn make_asset_certificate_header(
+    asset_hashes: &RbTree<&'static str, Hash>,
+    asset_name: &str,
+) -> (String, String) {
+    let certificate = api::data_certificate().unwrap_or_else(|| {
+        api::trap("data certificate is only available in query calls");
+    });
+    let witness = asset_hashes.witness(asset_name.as_bytes());
+    let tree = ic_certified_map::labeled(b"http_assets", witness);
+    let mut serializer = serde_cbor::ser::Serializer::new(vec![]);
+    serializer.self_describe().unwrap();
+    tree.serialize(&mut serializer)
+        .unwrap_or_else(|e| api::trap(&format!("failed to serialize a hash tree: {}", e)));
+    (
+        "IC-Certificate".to_string(),
+        format!(
+            "certificate=:{}:, tree=:{}:",
+            base64::encode(&certificate),
+            base64::encode(&serializer.into_inner())
+        ),
+    )
 }
 
 #[init]
 #[post_upgrade]
 pub fn init_assets() {
     ASSETS.with(|a| {
-        let mut assets = a.borrow_mut();
-        for (path, content, content_type) in get_assets() {
-            let mut headers = vec![];
-            headers.push((
-                "Content-Type".to_string(),
-                content_type.to_mime_type_string(),
-            ));
-            assets.insert(path, (headers, content.to_vec()));
-        }
+        ASSET_HASHES.with(|ah| {
+            let mut assets = a.borrow_mut();
+            let mut asset_hashes = ah.borrow_mut();
+            for (path, content, content_type) in get_assets() {
+                asset_hashes.insert(path, sha2::Sha256::digest(content).into());
+                let mut headers = vec![];
+                headers.push((
+                    "Content-Type".to_string(),
+                    content_type.to_mime_type_string(),
+                ));
+                assets.insert(path, (headers, content.to_vec()));
+            }
+            update_root_hash(&asset_hashes);
+        });
     });
+}
+
+fn update_root_hash(a: &RbTree<&'static str, [u8; 32]>) {
+    let prefixed_root_hash = labeled_hash(b"http_assets", &a.root_hash());
+    api::set_certified_data(&prefixed_root_hash[..]);
 }
 
 lazy_static! {

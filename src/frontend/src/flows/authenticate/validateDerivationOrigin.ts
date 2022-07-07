@@ -31,12 +31,23 @@ export const validateDerivationOrigin = async (
   try {
     const canisterId = Principal.fromText(matches[1]); // verifies that a valid canister id was matched TODO: necessary?
     const alternativeOriginsUrl = `https://${canisterId.toText()}.ic0.app/.well-known/ii-alternative-origins`;
-    const alternativeOriginsObj = (await fetch(
+    const response = await fetch(
       // SECURITY CRITICAL: always fetch non-raw
       alternativeOriginsUrl,
       // SECURITY CRITICAL: fail on redirects
       { redirect: "error" }
-    ).then((response) => response.json())) as { alternativeOrigins: string[] };
+    );
+
+    if (!response.ok) {
+      return {
+        result: "invalid",
+        message: `resource ${alternativeOriginsUrl} returned invalid status: ${response.status}`,
+      };
+    }
+
+    const alternativeOriginsObj = (await response.json()) as {
+      alternativeOrigins: string[];
+    };
 
     // check for expected property
     if (!Array.isArray(alternativeOriginsObj?.alternativeOrigins)) {

@@ -159,7 +159,7 @@ fn security_headers() -> Vec<HeaderField> {
         // by modern browsers.
         //
         // connect-src https://*.ic0.app is required in order for II to be able to fetch the
-        // /.well-known/ii-alternative-origins path of authenticating canisters setting a derivationOrigin
+        // /.well-known/ii-alternative-origins path of authenticating canisters setting a derivationOrigin.
         //
         // style-src 'unsafe-inline' is currently required due to the way styles are handled by the
         // application. Adding hashes would require a big restructuring of the application and build
