@@ -117,6 +117,7 @@ const init = async () => {
   await updateAlternativeOrigins();
   let derivationOrigin =
     derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
+  canisterIdEl.value = canisterId;
   signInBtn.onclick = async () => {
     if (BigInt(maxTimeToLiveEl.value) > BigInt(0)) {
       authClient.login({

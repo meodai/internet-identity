@@ -481,9 +481,13 @@ export class DemoAppView extends View {
     await fillText(this.browser, "maxTimeToLive", String(mttl));
   }
 
-  async whoami(replicaUrl: string, whoamiCanister: string): Promise<string> {
+  async setDerivationOrigin(derivationOrigin: string): Promise<void> {
+    await fillText(this.browser, "maxTimeToLive", derivationOrigin);
+  }
+
+  async whoami(replicaUrl: string, testCanister: string): Promise<string> {
     await fillText(this.browser, "hostUrl", replicaUrl);
-    await fillText(this.browser, "canisterId", whoamiCanister);
+    await fillText(this.browser, "canisterId", testCanister);
     await this.browser.$("#whoamiBtn").click();
     const whoamiResponseElem = await this.browser.$("#whoamiResponse");
     await whoamiResponseElem.waitUntil(
@@ -496,6 +500,28 @@ export class DemoAppView extends View {
       }
     );
     return await whoamiResponseElem.getText();
+  }
+
+  async updateAlternativeOrigins(
+    replicaUrl: string,
+    testCanister: string,
+    alternativeOrigins: string
+  ): Promise<string> {
+    await fillText(this.browser, "hostUrl", replicaUrl);
+    await fillText(this.browser, "canisterId", testCanister);
+    await fillText(this.browser, "newAlternativeOrigins", alternativeOrigins);
+    await this.browser.$("#updateNewAlternativeOrigins").click();
+    const alternativeOriginsElem = await this.browser.$("#alternativeOrigins");
+    await alternativeOriginsElem.waitUntil(
+      async () => {
+        return (await alternativeOriginsElem.getText()) === alternativeOrigins;
+      },
+      {
+        timeout: 6_000,
+        timeoutMsg: "expected alternativeOrigins to update within 6s",
+      }
+    );
+    return await alternativeOriginsElem.getText();
   }
 
   async getMessageText(messageNo: number): Promise<string> {

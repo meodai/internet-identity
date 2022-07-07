@@ -76,25 +76,6 @@ test("Register new identity and login with it", async () => {
   });
 }, 300_000);
 
-test("Register new identity and login with it using a derivation origin", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await browser.url(II_URL);
-    const welcomeView = new WelcomeView(browser);
-    await welcomeView.waitForDisplay();
-    await welcomeView.register();
-    await addVirtualAuthenticator(browser);
-    await browser.url(II_URL);
-    const userNumber = await FLOWS.registerNewIdentityWelcomeView(
-      DEVICE_NAME1,
-      browser
-    );
-    const mainView = new MainView(browser);
-    await mainView.waitForDeviceDisplay(DEVICE_NAME1);
-    await mainView.logout();
-    await FLOWS.login(userNumber, DEVICE_NAME1, browser);
-  });
-}, 300_000);
-
 test("Register new identity and add additional device", async () => {
   await runInBrowser(async (browser: WebdriverIO.Browser) => {
     const firstAuthenticator = await addVirtualAuthenticator(browser);
@@ -246,6 +227,36 @@ test("Log into client application, after registration", async () => {
     const demoAppView = new DemoAppView(browser);
     await demoAppView.open(DEMO_APP_URL, II_URL);
     await demoAppView.waitForDisplay();
+    expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
+    await demoAppView.signin();
+    await switchToPopup(browser);
+    await FLOWS.registerNewIdentityAuthenticateView(DEVICE_NAME1, browser);
+    await waitToClose(browser);
+    await demoAppView.waitForDisplay();
+    const principal = await demoAppView.getPrincipal();
+    expect(principal).not.toBe("2vxsx-fae");
+
+    expect(await demoAppView.whoami(REPLICA_URL, WHOAMI_CANISTER)).toBe(
+      principal
+    );
+
+    // default value
+    const exp = await browser.$("#expiration").getText();
+    expect(Number(exp) / (8 * 60 * 60_000_000_000)).toBeCloseTo(1);
+  });
+}, 300_000);
+
+test("Log into client application, after registration using derivation origin", async () => {
+  await runInBrowser(async (browser: WebdriverIO.Browser) => {
+    await addVirtualAuthenticator(browser);
+    const demoAppView = new DemoAppView(browser);
+    await demoAppView.open("https://nice-name.com", II_URL);
+    await demoAppView.waitForDisplay();
+    await demoAppView.updateAlternativeOrigins(
+      REPLICA_URL,
+      WHOAMI_CANISTER,
+      '{"alternativeOrigins":["https://nice-name.com"]}'
+    );
     expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
     await demoAppView.signin();
     await switchToPopup(browser);
