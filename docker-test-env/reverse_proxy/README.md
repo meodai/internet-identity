@@ -9,6 +9,7 @@ We still need the `--ignore-certificate-errors` because we don't add the certifi
 
 The certificates are self-signed and created using the following commands:
 1. `openssl genrsa -aes256 -passout pass:gsahdg -out server.key 4096`
-2. `openssl req -new -key server.key -out server.csr`
+2. Strip away password protection: `openssl rsa -in server.key -out server.key`
+3. `openssl req -new -key server.key -out server.csr`
     * This will ask for information. Note that the `Common Name (CN)` must match the host name.
-3. `openssl x509 -req -sha256 -days 365 -in server.csr -signkey server.key -out server.crt`
+4. `openssl x509 -req -sha256 -days 365 -in server.csr -signkey server.key -out server.crt`
