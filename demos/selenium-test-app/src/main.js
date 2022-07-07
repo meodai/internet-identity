@@ -25,6 +25,7 @@ const delegationEl = document.getElementById("delegation");
 const expirationEl = document.getElementById("expiration");
 const iiUrlEl = document.getElementById("iiUrl");
 const maxTimeToLiveEl = document.getElementById("maxTimeToLive");
+const derivationOriginEl = document.getElementById("derivationOrigin");
 
 let authClient;
 let iiProtocolTestWindow;
@@ -101,17 +102,21 @@ window.addEventListener("message", (event) => {
 const init = async () => {
   authClient = await AuthClient.create();
   updateView(authClient.getIdentity());
-
+  console.log(derivationOriginEl.value);
+  let derivationOrigin =
+    derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
   signInBtn.onclick = async () => {
     if (BigInt(maxTimeToLiveEl.value) > BigInt(0)) {
       authClient.login({
         identityProvider: iiUrlEl.value,
         maxTimeToLive: BigInt(maxTimeToLive.value),
+        derivationOrigin,
         onSuccess: () => updateView(authClient.getIdentity()),
       });
     } else {
       authClient.login({
         identityProvider: iiUrlEl.value,
+        derivationOrigin,
         onSuccess: () => updateView(authClient.getIdentity()),
       });
     }
