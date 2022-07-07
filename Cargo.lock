@@ -4563,20 +4563,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "selenium-test-app"
-version = "0.1.0"
-dependencies = [
- "candid",
- "ic-cdk",
- "ic-cdk-macros",
- "lazy_static",
- "serde",
- "serde_bytes",
- "serde_cbor",
- "serde_with",
-]
-
-[[package]]
 name = "semver"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"

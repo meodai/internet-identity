@@ -37,24 +37,22 @@ import {
   waitToClose,
 } from "./util";
 
-// Read canister ids from the corresponding dfx files.
-// This assumes that they have been successfully dfx-deployed
-import canister_ids1 from "../../../../.dfx/local/canister_ids.json";
-import canister_ids2 from "../../../../demos/using-dev-build/.dfx/local/canister_ids.json";
+// // Read canister ids from the corresponding dfx files.
+// // This assumes that they have been successfully dfx-deployed
+// import canister_ids1 from "../../../../.dfx/local/canister_ids.json";
+// import canister_ids2 from "../../../../demos/using-dev-build/.dfx/local/canister_ids.json";
+//
+// const IDENTITY_CANISTER = canister_ids1.internet_identity.local;
+const WHOAMI_CANISTER = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 
-const IDENTITY_CANISTER = canister_ids1.internet_identity.local;
-const WHOAMI_CANISTER = canister_ids2.whoami.local;
-
-const REPLICA_URL = process.env.REPLICA_URL
-  ? process.env.REPLICA_URL
-  : "http://localhost:8000";
-const II_ORIGIN = process.env.II_ORIGIN
-  ? process.env.II_ORIGIN
-  : "http://localhost:8000";
-const II_URL = `${II_ORIGIN}/?canisterId=${IDENTITY_CANISTER}`;
-const FAQ_URL = `${II_ORIGIN}/faq?canisterId=${IDENTITY_CANISTER}`;
-const ABOUT_URL = `${II_ORIGIN}/about?canisterId=${IDENTITY_CANISTER}`;
-const DEMO_APP_URL = "http://localhost:8080/";
+const REPLICA_URL = "https://ic0.app";
+const II_ORIGIN = `https://identity.ic0.app`;
+//   ? process.env.II_ORIGIN
+//   : "http://localhost:8000";
+const II_URL = `https://identity.ic0.app`;
+const FAQ_URL = `${II_URL}/faq`;
+const ABOUT_URL = `${II_URL}/about`;
+const DEMO_APP_URL = "https://nice-name.com";
 
 const DEVICE_NAME1 = "Virtual WebAuthn device";
 const DEVICE_NAME2 = "Other WebAuthn device";
