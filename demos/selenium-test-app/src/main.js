@@ -215,10 +215,15 @@ const init = async () => {
     localIdentity = Ed25519KeyIdentity.generate();
     let derivationOrigin =
       derivationOriginEl.value !== "" ? derivationOriginEl.value : undefined;
+    let maxTimeToLive =
+      BigInt(maxTimeToLiveEl.value) > BigInt(0)
+        ? BigInt(maxTimeToLiveEl.value)
+        : undefined;
     const validMessage = {
       kind: "authorize-client",
       sessionPublicKey: new Uint8Array(localIdentity.getPublicKey().toDer()),
       derivationOrigin,
+      maxTimeToLive,
     };
     addMessageElement(validMessage, false);
     iiProtocolTestWindow.postMessage(validMessage, iiUrlEl.value);
