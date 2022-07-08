@@ -7,6 +7,7 @@ import {
 } from "@dfinity/identity";
 import { AuthClient } from "@dfinity/auth-client";
 import { Principal } from "@dfinity/principal";
+import { IDL } from "@dfinity/candid";
 
 const signInBtn = document.getElementById("signinBtn");
 const signOutBtn = document.getElementById("signoutBtn");
@@ -244,9 +245,9 @@ const init = async () => {
     const modeSelection = document.querySelector(
       'input[name="alternativeOriginsMode"]:checked'
     ).value;
-    let mode = { Certified: null };
+    let mode = { CertifiedContent: null };
     if (modeSelection === "uncertified") {
-      mode = { Uncertified: null };
+      mode = { UncertifiedContent: null };
     } else if (modeSelection === "redirect") {
       let location = document.getElementById("redirectLocation").value;
       mode = { Redirect: { location: location } };

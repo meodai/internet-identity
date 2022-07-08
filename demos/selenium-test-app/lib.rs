@@ -102,18 +102,17 @@ pub fn http_request(req: HttpRequest) -> HttpResponse {
     match path {
         "/.well-known/ii-alternative-origins" => ALTERNATIVE_ORIGINS_MODE.with(|m| {
             let mode = m.borrow();
+            let mut status_code = 200;
             match mode.clone() {
                 CertifiedContent => {
                     headers.push(certificate_header);
                 }
                 Redirect { location } => {
+                    // needs to be certified content for the service worker
+                    // (which the browser will then ignore and redirect anyway)
                     headers.push(certificate_header);
                     headers.push(("Location".to_string(), location));
-                    return HttpResponse {
-                        status_code: 302,
-                        headers,
-                        body: Cow::Owned(ByteBuf::new()),
-                    };
+                    status_code = 302;
                 }
                 _ => {}
             };
@@ -123,7 +122,7 @@ pub fn http_request(req: HttpRequest) -> HttpResponse {
                 headers.append(&mut asset_headers.clone());
 
                 HttpResponse {
-                    status_code: 200,
+                    status_code,
                     headers,
                     body: Cow::Owned(ByteBuf::from(value.clone())),
                 }
