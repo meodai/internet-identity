@@ -77,9 +77,23 @@
       <div id="whoamiResponse"></div>
     </div>
     <div>
-      <label for="newAlternativeOrigins" style="display: inline-block; width: 120px">
+      <label for="newAlternativeOrigins" style="display: inline-block">
         Set new value for /.well-known/ii-alternative-origins:
       </label>
+      <div>
+        <input type="radio" id="certified" name="alternativeOriginsMode" value="certified"
+               checked>
+        <label for="certified">Certified</label>
+      </div>
+      <div>
+        <input type="radio" id="uncertified" name="alternativeOriginsMode" value="uncertified">
+        <label for="uncertified">Uncertified</label>
+      </div>
+      <div>
+        <input type="radio" id="redirect" name="alternativeOriginsMode" value="redirect">
+        <label for="redirect">Redirect</label>
+        <input type="text" id="redirectLocation" value="/.well-known/evil-alternative-origins" />
+      </div>
       <input type="text" id="newAlternativeOrigins" />
       <button id="updateNewAlternativeOrigins">Update Value</button>
     </div>

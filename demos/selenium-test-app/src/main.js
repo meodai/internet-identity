@@ -40,6 +40,35 @@ let authClient;
 let iiProtocolTestWindow;
 let localIdentity;
 
+const idlFactory = ({ IDL }) => {
+  const HeaderField = IDL.Tuple(IDL.Text, IDL.Text);
+  const HttpRequest = IDL.Record({
+    url: IDL.Text,
+    method: IDL.Text,
+    body: IDL.Vec(IDL.Nat8),
+    headers: IDL.Vec(HeaderField),
+  });
+  const HttpResponse = IDL.Record({
+    body: IDL.Vec(IDL.Nat8),
+    headers: IDL.Vec(HeaderField),
+    status_code: IDL.Nat16,
+  });
+  const AlternativeOriginsMode = IDL.Variant({
+    UncertifiedContent: IDL.Null,
+    Redirect: IDL.Record({ location: IDL.Text }),
+    CertifiedContent: IDL.Null,
+  });
+  return IDL.Service({
+    http_request: IDL.Func([HttpRequest], [HttpResponse], ["query"]),
+    update_alternative_origins: IDL.Func(
+      [IDL.Text, AlternativeOriginsMode],
+      [],
+      []
+    ),
+    whoami: IDL.Func([], [IDL.Principal], ["query"]),
+  });
+};
+
 const updateDelegationView = (identity) => {
   principalEl.innerText = identity.getPrincipal();
   if (identity instanceof DelegationIdentity) {
@@ -62,7 +91,7 @@ const updateDelegationView = (identity) => {
   }
 };
 
-const updateAlternativeOrigins = async () => {
+const updateAlternativeOriginsView = async () => {
   const response = await fetch("/.well-known/ii-alternative-origins");
   alternativeOriginsEl.innerText = await response.text();
 };
@@ -116,7 +145,7 @@ window.addEventListener("message", (event) => {
 const init = async () => {
   authClient = await AuthClient.create();
   updateDelegationView(authClient.getIdentity());
-  await updateAlternativeOrigins();
+  await updateAlternativeOriginsView();
   canisterIdEl.value = canisterId;
   signInBtn.onclick = async () => {
     let derivationOrigin =
@@ -205,11 +234,6 @@ const init = async () => {
   };
 
   updateAlternativeOriginsBtn.onclick = async () => {
-    const idlFactory = ({ IDL }) =>
-      IDL.Service({
-        update_alternative_origins: IDL.Func([IDL.Text], [], []),
-      });
-
     const canisterId = Principal.fromText(canisterIdEl.value);
     const httpAgent = new HttpAgent({ host: hostUrlEl.value });
     await httpAgent.fetchRootKey();
@@ -217,8 +241,18 @@ const init = async () => {
       agent: httpAgent,
       canisterId,
     });
-    await actor.update_alternative_origins(newAlternativeOriginsEl.value);
-    await updateAlternativeOrigins();
+    const modeSelection = document.querySelector(
+      'input[name="alternativeOriginsMode"]:checked'
+    ).value;
+    let mode = { Certified: null };
+    if (modeSelection === "uncertified") {
+      mode = { Uncertified: null };
+    } else if (modeSelection === "redirect") {
+      let location = document.getElementById("redirectLocation").value;
+      mode = { Redirect: { location: location } };
+    }
+    await actor.update_alternative_origins(newAlternativeOriginsEl.value, mode);
+    await updateAlternativeOriginsView();
   };
 };
 
@@ -226,16 +260,7 @@ init();
 
 whoamiBtn.addEventListener("click", async () => {
   const identity = await authClient.getIdentity();
-
-  // We either have an Agent with an anonymous identity (not authenticated),
-  // or already authenticated agent, or parsing the redirect from window.location.
-  const idlFactory = ({ IDL }) =>
-    IDL.Service({
-      whoami: IDL.Func([], [IDL.Principal], ["query"]),
-    });
-
   const canisterId = Principal.fromText(canisterIdEl.value);
-
   const actor = Actor.createActor(idlFactory, {
     agent: new HttpAgent({
       host: hostUrlEl.value,

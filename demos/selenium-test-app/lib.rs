@@ -1,3 +1,4 @@
+use crate::AlternativeOriginsMode::{CertifiedContent, Redirect};
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api;
 use ic_cdk_macros::{init, post_upgrade, query, update};
@@ -13,6 +14,7 @@ use std::collections::HashMap;
 thread_local! {
     static ASSETS: RefCell<HashMap<&'static str, (Vec<(String, String)>, Vec<u8>)>> = RefCell::new(HashMap::default());
     static ASSET_HASHES: RefCell<RbTree<&'static str, [u8; 32]>> = RefCell::new(RbTree::default());
+    static ALTERNATIVE_ORIGINS_MODE: RefCell<AlternativeOriginsMode> = RefCell::new(CertifiedContent);
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -38,7 +40,7 @@ fn whoami() -> Principal {
 }
 
 #[update]
-fn update_alternative_origins(content: String) {
+fn update_alternative_origins(content: String, mode: AlternativeOriginsMode) {
     ASSETS.with(|a| {
         ASSET_HASHES.with(|ah| {
             let mut assets = a.borrow_mut();
@@ -58,6 +60,10 @@ fn update_alternative_origins(content: String) {
             update_root_hash(&asset_hashes);
         });
     });
+
+    ALTERNATIVE_ORIGINS_MODE.with(|m| {
+        m.replace(mode);
+    })
 }
 
 pub type HeaderField = (String, String);
@@ -77,33 +83,72 @@ pub struct HttpResponse {
     pub body: Cow<'static, Bytes>,
 }
 
+#[derive(Clone, Debug, CandidType, Deserialize)]
+pub enum AlternativeOriginsMode {
+    CertifiedContent,
+    UncertifiedContent,
+    Redirect { location: String },
+}
+
 #[query]
 pub fn http_request(req: HttpRequest) -> HttpResponse {
     let parts: Vec<&str> = req.url.split('?').collect();
     let path = parts[0];
     let mut headers = vec![];
     headers.push(("Access-Control-Allow-Origin".to_string(), "*".to_string()));
-
     let certificate_header =
         ASSET_HASHES.with(|a| make_asset_certificate_header(&a.borrow(), path));
-    headers.push(certificate_header);
 
-    ASSETS.with(|a| match a.borrow().get(path) {
-        Some((asset_headers, value)) => {
-            headers.append(&mut asset_headers.clone());
+    match path {
+        "/.well-known/ii-alternative-origins" => ALTERNATIVE_ORIGINS_MODE.with(|m| {
+            let mode = m.borrow();
+            match mode.clone() {
+                CertifiedContent => {
+                    headers.push(certificate_header);
+                }
+                Redirect { location } => {
+                    headers.push(certificate_header);
+                    headers.push(("Location".to_string(), location));
+                    return HttpResponse {
+                        status_code: 302,
+                        headers,
+                        body: Cow::Owned(ByteBuf::new()),
+                    };
+                }
+                _ => {}
+            };
+            ASSETS.with(|a| {
+                let assets = a.borrow();
+                let (asset_headers, value) = assets.get(path).unwrap();
+                headers.append(&mut asset_headers.clone());
 
-            HttpResponse {
-                status_code: 200,
-                headers,
-                body: Cow::Owned(ByteBuf::from(value.clone())),
-            }
+                HttpResponse {
+                    status_code: 200,
+                    headers,
+                    body: Cow::Owned(ByteBuf::from(value.clone())),
+                }
+            })
+        }),
+        _ => {
+            headers.push(certificate_header);
+            ASSETS.with(|a| match a.borrow().get(path) {
+                Some((asset_headers, value)) => {
+                    headers.append(&mut asset_headers.clone());
+
+                    HttpResponse {
+                        status_code: 200,
+                        headers,
+                        body: Cow::Owned(ByteBuf::from(value.clone())),
+                    }
+                }
+                None => HttpResponse {
+                    status_code: 404,
+                    headers,
+                    body: Cow::Owned(ByteBuf::from(format!("Asset {} not found.", path))),
+                },
+            })
         }
-        None => HttpResponse {
-            status_code: 404,
-            headers,
-            body: Cow::Owned(ByteBuf::from(format!("Asset {} not found.", path))),
-        },
-    })
+    }
 }
 
 fn make_asset_certificate_header(
@@ -171,7 +216,7 @@ lazy_static! {
 
 // Get all the assets. Duplicated assets like index.html are shared and generally all assets are
 // prepared only once (like injecting the canister ID).
-fn get_assets() -> [(&'static str, &'static [u8], ContentType); 4] {
+fn get_assets() -> [(&'static str, &'static [u8], ContentType); 5] {
     let index_html: &[u8] = INDEX_HTML_STR.as_bytes();
     [
         ("/", index_html, ContentType::HTML),
@@ -184,6 +229,11 @@ fn get_assets() -> [(&'static str, &'static [u8], ContentType); 4] {
         (
             "/.well-known/ii-alternative-origins",
             b"{\"alternativeOrigins\":[]}",
+            ContentType::JSON,
+        ),
+        (
+            "/.well-known/evil-alternative-origins",
+            b"{\"alternativeOrigins\":[\"https://evil.com\"]}",
             ContentType::JSON,
         ),
     ]

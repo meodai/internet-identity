@@ -13,8 +13,14 @@ type HttpResponse = record {
     body: blob;
 };
 
+type AlternativeOriginsMode = variant {
+    CertifiedContent;
+    UncertifiedContent;
+    Redirect: record { location: text; };
+}
+
 service : {
   whoami: () -> (principal) query;
-  update_alternative_origins: (text) -> ();
+  update_alternative_origins: (text, AlternativeOriginsMode) -> ();
   http_request: (request: HttpRequest) -> (HttpResponse) query;
 }
