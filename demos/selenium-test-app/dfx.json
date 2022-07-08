@@ -1,6 +1,6 @@
 {
   "canisters": {
-    "selenium-test-app": {
+    "selenium_test_app": {
       "type": "custom",
       "candid": "selenium-test-app.did",
       "wasm": "selenium-test-app.wasm",
