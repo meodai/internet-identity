@@ -1,11 +1,11 @@
-[workspace]
-members = [
-    "src/internet_identity",
-    "src/canister_tests",
-    "src/internet_identity_interface",
-]
+[package]
+name = "pokus"
+version = "0.1.0"
+edition = "2021"
 
-[profile.release]
-debug = false # stripped by ic-cdk-optimizer anyway
-lto = true
-opt-level = 'z'
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type=["cdylib"]
+
+[dependencies]

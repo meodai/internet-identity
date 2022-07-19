@@ -16,6 +16,7 @@ jobs:
   # The image shared by all builds, containing pre-built rust deps
   docker-build-base:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - uses: actions/checkout@v2
 
@@ -37,6 +38,7 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
+    if: false
     needs: docker-build-base
     strategy:
       # NOTE: the 'name' in the matrix should match the asset filename, because it is used in
@@ -97,6 +99,7 @@ jobs:
 
   wasm-size:
     runs-on: ubuntu-latest
+    if: false
     needs: docker-build
     steps:
       - uses: actions/checkout@v2
@@ -123,6 +126,7 @@ jobs:
 
   test-app-build:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -157,6 +161,7 @@ jobs:
   # (note: this runs _all_ cargo tests)
   canister-tests:
     runs-on: ${{ matrix.os }}
+    if: false
     needs:
       - docker-build
     strategy:
@@ -214,6 +219,7 @@ jobs:
 
   selenium:
     runs-on: ubuntu-latest
+    if: false
     needs: [docker-build, test-app-build]
     strategy:
       matrix:
@@ -304,6 +310,7 @@ jobs:
 
   using-dev-build:
     runs-on: ubuntu-latest
+    if: false
     needs: docker-build
     env:
       DFX_VERSION: 0.8.3
@@ -373,13 +380,13 @@ jobs:
   # 'mobile' runs.
   upload-screenshots:
     runs-on: ubuntu-latest
+    if: false
 
     # Run after all the tests completed successfully (and have uploaded their
     # artifacts)
     needs: selenium
 
     # We don't want to commit new screenshots to main
-    if: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -450,7 +457,7 @@ jobs:
   # This ... releases
   release:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/release-')
+    if: false
     needs: docker-build
 
     steps:
@@ -500,24 +507,10 @@ jobs:
 
   clean-build:
     runs-on: ${{ matrix.os }}
-    if: ${{ github.ref == 'refs/heads/main' }}
-    needs: docker-build
     strategy:
       matrix:
         os: [ ubuntu-22.04, ubuntu-20.04, ubuntu-18.04, macos-10.15, macos-11, macos-12 ]
     steps:
       - uses: actions/checkout@v2
-      - name: 'Download wasm'
-        uses: actions/download-artifact@v2
-        with:
-          name: internet_identity_production.wasm
-          path: .
-      - run: |
-          sha256=$(shasum -a 256 ./internet_identity_production.wasm | cut -d ' ' -f1)
-          echo "::set-output name=sha256::$sha256"
-        id: sha256
 
       - uses: ./.github/actions/check-build
-        with:
-          # we check that ubuntu builds match the docker build
-          sha256: ${{ startsWith(matrix.os, 'ubuntu') && steps.sha256.outputs.sha256 || '' }}
