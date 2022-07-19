@@ -19,7 +19,7 @@ runs:
     - name: Check output hash
       shell: bash
       run: |
-        sha256=$(shasum -a 256 ./internet_identity.wasm | cut -d ' ' -f1)
+        sha256=$(shasum -a 256 ./target/wasm32-unknown-unknown/release/*.wasm | cut -d ' ' -f1)
         echo got sha "$sha256"
         if [ -n "${{ inputs.sha256 }}" ]
         then
