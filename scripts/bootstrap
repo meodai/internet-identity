@@ -22,9 +22,9 @@ echo "using rust version '$rust_version'"
 # here we set the toolchain to 'none' and rustup will pick up on ./rust-toolchain.toml
 run curl --fail https://sh.rustup.rs -sSf | run sh -s -- -y --default-toolchain "none" --no-modify-path
 
-echo "looking for ic-cdk-optimizer"
-if ! command -v ic-cdk-optimizer
-then
-    echo "installing ic-cdk-optimizer"
-    run cargo install ic-cdk-optimizer --version 0.3.1
-fi
+# echo "looking for ic-cdk-optimizer"
+# if ! command -v ic-cdk-optimizer
+# then
+#     echo "installing ic-cdk-optimizer"
+#     run cargo install ic-cdk-optimizer --version 0.3.1
+# fi
