@@ -2,9 +2,16 @@ import { html, render } from "lit-html";
 import { parseUserNumber } from "../utils/userNumber";
 
 const pageContent = (title: string, userNumber: bigint | null) => html`
+  <style>
+    label {
+      margin: none;
+    }
+  </style>
   <div class="container">
     <h1>${title}</h1>
-    <p>Please provide an Identity Anchor.</p>
+    <label for="userNumberInput">
+      <p>Please provide an Identity Anchor.</p>
+    </label>
     <input
       type="text"
       id="userNumberInput"

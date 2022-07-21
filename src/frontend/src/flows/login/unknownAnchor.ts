@@ -35,11 +35,16 @@ const pageContent = () => html` <style>
     .spacer {
       height: 2rem;
     }
+    label {
+      margin: none;
+    }
   </style>
   <div class="container">
     ${icLogo}
     <h2 id="loginWelcome">Welcome to<br />Internet Identity</h2>
-    <p>Provide an Identity Anchor to authenticate.</p>
+    <label for="registerUserNumber">
+      <p>Provide an Identity Anchor to authenticate.</p>
+    </label>
     <input
       type="text"
       id="registerUserNumber"
